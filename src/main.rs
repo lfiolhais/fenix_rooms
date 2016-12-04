@@ -3,10 +3,13 @@ extern crate pencil;
 extern crate log;
 extern crate env_logger;
 extern crate hyper;
+extern crate serde_json;
 
+use std::collections::HashMap;
 use std::collections::BTreeMap;
 use pencil::{Pencil, Request, Response, PencilResult};
 use pencil::jsonify;
+use pencil::{UserError, PenUserError};
 use hyper::client::Client;
 use std::io::Read;
 
@@ -26,7 +29,7 @@ use std::io::Read;
 fn create_user(request: &mut Request) -> PencilResult {
 
     // Get the username from the body of the request if it exists
-    let username: &str = match request.form().get("Some") {
+    let username: &str = match request.form().get("username") {
         Some(username) => username,
         None => "",
     };
@@ -54,24 +57,45 @@ fn create_user(request: &mut Request) -> PencilResult {
 
 /// Get all campi at IST
 ///
+/// Build a GET request and query FenixEDU. The response body will have a list
+/// of dictionaries. Quietly bail if we fail to read the response body. If the
+/// message read more than 0 bytes we can proceed to processing the information.
+/// Otherwise bail quietly.
+///
 /// # Output
-/// All campi
-fn get_campi(request: &mut Request) -> PencilResult {
+/// All campi information with type, name and id.
+fn get_campi(_: &mut Request) -> PencilResult {
     // Create Hyper client to perform REST calls
     let client = Client::new();
 
     // Create and send GET request
     let mut res =
         client.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces").send().unwrap();
+
     // Read content from response and write it to a buffer
     let mut buf: String = String::new();
-    res.read_to_string(&mut buf);
+    let read_size = match res.read_to_string(&mut buf) {
+        Ok(size) => size,
+        Err(err) => {
+            let error = UserError::new(format!("Problem while reading message body: {}", err));
+            return Err(PenUserError(error));
+        }
+    };
 
-    // Build response and set contetn to JSON
-    let mut response = Response::from(buf);
-    response.set_content_type("application/json");
+    // Bail quietly when Fenix doesn't return information
+    if read_size != 0 {
+        let map: Vec<HashMap<String, String>> = serde_json::from_str(&buf).unwrap();
 
-    return Ok(response);
+        // Build response and set content to JSON
+        let mut response = Response::from(buf);
+        response.set_content_type("application/json");
+
+        return Ok(response);
+    } else {
+        let error = UserError::new(format!("FenixEDU did not return any information"));
+        return Err(PenUserError(error));
+    }
+
 }
 
 fn main() {
