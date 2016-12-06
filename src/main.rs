@@ -1,24 +1,23 @@
 #![feature(proc_macro)]
 
 extern crate pencil;
+extern crate fenix_rooms;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 extern crate hyper;
-
 #[macro_use]
 extern crate serde_derive;
-
 extern crate serde;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::collections::BTreeMap;
 use pencil::{Pencil, Request, Response, PencilResult};
 use pencil::jsonify;
 use pencil::{UserError, PenUserError};
 use hyper::client::Client;
 use std::io::Read;
+use fenix_rooms::utils::get_request;
 
 #[derive(Deserialize)]
 struct ContainedSpace {
@@ -26,7 +25,8 @@ struct ContainedSpace {
     type_name: String,
     id: String,
     name: String,
-    topLevelSpace: HashMap<String, String>,
+    #[serde(rename="topLevelSpace")]
+    top_level_space: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -35,9 +35,12 @@ struct Building {
     type_name: String,
     id: String,
     name: String,
-    topLevelSpace: HashMap<String, String>,
-    containedSpaces: Vec<ContainedSpace>,
-    parentSpace: HashMap<String, String>,
+    #[serde(rename="topLevelSpace")]
+    top_level_space: HashMap<String, String>,
+    #[serde(rename="containedSpaces")]
+    contained_spaces: Vec<ContainedSpace>,
+    #[serde(rename="parentSpace")]
+    parent_space: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -46,8 +49,11 @@ struct Campus {
     type_name: String,
     id: String,
     name: String,
-    containedSpaces: Vec<ContainedSpace>,
+    #[serde(rename="containedSpaces")]
+    contained_spaces: Vec<ContainedSpace>,
 }
+
+type Space = Vec<HashMap<String, String>>;
 
 /// Creates a User in the Database
 ///
@@ -62,34 +68,34 @@ struct Campus {
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-fn create_user(request: &mut Request) -> PencilResult {
-
-    // Get the username from the body of the request if it exists
-    let username: &str = match request.form().get("username") {
-        Some(username) => username,
-        None => "",
-    };
-
-    // Need to change the jsonify function to accept other status codes.
-    let mut object = BTreeMap::new();
-    object.insert("username", username);
-
-    // Query DB about the availability of username
-    // If username exists send a response with the 409 status code
-    // else create user
-
-    // let mut response: Response;
-    // if username.is_empty() {
-    //     response = Response::from("Username was not provided");
-    //     response.status_code = 204;
-    // } else {
-    //     response = Response::from(username);
-    //     response.status_code = 201;
-    //     response.set_content_type("application/json");
-    // }
-
-    return jsonify(&object);
-}
+// fn create_user(request: &mut Request) -> PencilResult {
+//
+//     // Get the username from the body of the request if it exists
+//     let username: &str = match request.form().get("username") {
+//         Some(username) => username,
+//         None => "",
+//     };
+//
+//     // Need to change the jsonify function to accept other status codes.
+//     let mut object = BTreeMap::new();
+//     object.insert("username", username);
+//
+//     // Query DB about the availability of username
+//     // If username exists send a response with the 409 status code
+//     // else create user
+//
+//     // let mut response: Response;
+//     // if username.is_empty() {
+//     //     response = Response::from("Username was not provided");
+//     //     response.status_code = 204;
+//     // } else {
+//     //     response = Response::from(username);
+//     //     response.status_code = 201;
+//     //     response.set_content_type("application/json");
+//     // }
+//
+//     return jsonify(&object);
+// }
 
 /// Get all campi at IST
 ///
@@ -100,37 +106,37 @@ fn create_user(request: &mut Request) -> PencilResult {
 ///
 /// # Output
 /// All campi information with type, name and id.
-fn get_campi(_: &mut Request) -> PencilResult {
-    // Create Hyper client to perform REST calls
-    let client = Client::new();
+fn get_campi() -> Result<(Space, String), UserError>  {
 
-    // Create and send GET request
-    let mut res =
-        client.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces").send().unwrap();
-
-    // Read content from response and write it to a buffer
-    let mut buf: String = String::new();
-    let read_size = match res.read_to_string(&mut buf) {
-        Ok(size) => size,
+    // Send GET request to the url
+    let get_response = match get_request("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces") {
+        Ok(res) => res,
         Err(err) => {
-            let error = UserError::new(format!("Problem while reading message body: {}", err));
-            return Err(PenUserError(error));
+            let error = UserError::new(err);
+            return Err(error);
         }
     };
 
-    // Bail quietly when Fenix doesn't return information
-    if read_size != 0 {
-        let map: Vec<HashMap<String, String>> = serde_json::from_str(&buf).unwrap();
+    let space: Space = serde_json::from_str(&get_response).unwrap();
 
-        // Build response and set content to JSON
-        let mut response = Response::from(buf);
-        response.set_content_type("application/json");
+    println!("Space: {:#?}", space);
 
-        return Ok(response);
-    } else {
-        let error = UserError::new("FenixEDU did not return any information");
-        return Err(PenUserError(error));
-    }
+    return Ok((space, get_response));
+}
+
+fn campi_handler(_: &mut Request) -> PencilResult {
+    let space = match get_campi() {
+        Ok(space) => space.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    // Build response and set content to JSON
+    let mut response = Response::from(space);
+    response.set_content_type("application/json");
+
+    return Ok(response);
 }
 
 fn get_building(request: &mut Request) -> PencilResult {
@@ -143,76 +149,43 @@ fn get_building(request: &mut Request) -> PencilResult {
         let error = UserError::new("The campus field is empty");
         return Err(PenUserError(error));
     } else {
-        // Create Hyper client to perform REST calls
-        let client = Client::new();
-
-        // Create and send GET request
-        let mut res =
-            client.get("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces").send().unwrap();
-
-        // Read content from response and write it to a buffer
-        let mut buf: String = String::new();
-        let read_size = match res.read_to_string(&mut buf) {
-            Ok(size) => size,
+        let space = match get_campi() {
+            Ok(space) => space.0,
             Err(err) => {
-                let error = UserError::new(format!("Problem while reading message body: {}", err));
+                return Err(PenUserError(err));
+            }
+        };
+
+        let mut fenix_campus_id: &String = &format!("");
+        // This needs to work for the other campus "Tecnológico e Nuclear"
+        for c in &space {
+            if c.get("name").unwrap().to_lowercase() == campus {
+                fenix_campus_id = c.get("id").unwrap();
+                break;
+            }
+        }
+
+        if fenix_campus_id.is_empty() {
+            return Ok(Response::from(format!("There was no campus found with name: {}", campus)));
+        }
+
+        println!("The id found for {} is: {}", campus, fenix_campus_id);
+
+        let url = &format!("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/{}",
+                           fenix_campus_id);
+
+        let campus = match get_request(url) {
+            Ok(campus) => campus,
+            Err(err) => {
+                let error = UserError::new(err);
                 return Err(PenUserError(error));
             }
         };
 
-        // Bail quietly when FenixEDU doesn't return information
-        if read_size != 0 {
-            // Improve the error handling
-            let campi: Vec<HashMap<String, String>> = serde_json::from_str(&buf).unwrap();
+        let building: Campus = serde_json::from_str(&campus).unwrap();
 
-            let mut fenix_campus_id: &String = &format!("");
-            // This needs to work for the other campus "Tecnológico e Nuclear"
-            for c in &campi {
-                if c.get("name").unwrap().to_lowercase() == campus {
-                    fenix_campus_id = c.get("id").unwrap();
-                    break;
-                }
-            }
-
-            if fenix_campus_id.is_empty() {
-                return Ok(Response::from(format!("There was no campus found with name: {}",
-                                                 campus)));
-            }
-
-            println!("The id found for {} is: {}", campus, fenix_campus_id);
-
-            // Create and send GET request
-            let mut test =
-                client.get(&format!("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/{}",
-                                  fenix_campus_id))
-                    .send()
-                    .unwrap();
-
-            // Read content from response and write it to a buffer
-            buf = String::new();
-            let read_size = match test.read_to_string(&mut buf) {
-                Ok(size) => size,
-                Err(err) => {
-                    let error = UserError::new(format!("Problem while reading message body: {}",
-                                                       err));
-                    return Err(PenUserError(error));
-                }
-            };
-
-            // Bail quietly when FenixEDU doesn't return information
-            if read_size != 0 {
-                let building: Campus = serde_json::from_str(&buf).unwrap();
-
-                println!("My Building: {}", building.containedSpaces[0].name);
-                return Ok(Response::from("OK"));
-            } else {
-                return Ok(Response::from("no information"));
-            }
-
-        } else {
-            let error = UserError::new("FenixEDU did not return any information");
-            return Err(PenUserError(error));
-        }
+        println!("My Building: {}", building.contained_spaces[0].name);
+        return Ok(Response::from("OK"));
     }
 }
 
@@ -235,11 +208,11 @@ fn main() {
     // REST API
     // The REST API will only return JSON enconded responses.
     // ///////////////////////////////////////////////////////
-    app.get("/api/campi", "get_campi", get_campi);
+    app.get("/api/campi", "campi_handler", campi_handler);
     app.get("/api/<campus:string>/building",
             "get_building",
             get_building);
-    app.post("/api/create_user", "create_user", create_user);
+    // app.post("/api/create_user", "create_user", create_user);
 
     // Run server
     debug!("Running on 127.0.0.1:8080");
