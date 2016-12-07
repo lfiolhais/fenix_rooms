@@ -3,6 +3,17 @@ extern crate hyper;
 use std::io::Read;
 use self::hyper::client::Client;
 
+/// Perform a GET request to the specified url
+///
+/// Build a GET request and query. Quietly bail if we fail to read the response
+/// body. If the message read more than 0 bytes we can proceed to processing the
+/// information. Otherwise bail quietly.
+///
+/// # Arguments
+/// * url => Specified URL to perform the GET request to.
+///
+/// # Return Value
+/// The error message of the problem or the contents of the body.
 pub fn get_request(url: &str) -> Result<String, String> {
     // Create Hyper client to perform REST calls
     let client = Client::new();
