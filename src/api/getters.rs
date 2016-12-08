@@ -5,14 +5,14 @@ use super::pencil::UserError;
 use super::{Space, Campus, Building, ContainedSpace};
 use utils;
 
-/// Get all spaces at IST
+/// Get all spaces at from Fenix
 ///
-/// TODO: Description of the function
+/// Send a GET request to the URL and read the data. Serialize the data into a
+/// Space object and return a Result with the JSON string and the Space object.
 ///
 /// # Output
-/// All spaces information with type, name and id.
+/// Result of the transaction with a Space and String tuple and a UserError.
 pub fn get_spaces() -> Result<(Space, String), UserError> {
-
     // Send GET request to the url
     let get_response = match utils::get_request("https://fenix.tecnico.ulisboa.\
                                                  pt/api/fenix/v1/spaces") {
@@ -30,9 +30,20 @@ pub fn get_spaces() -> Result<(Space, String), UserError> {
     return Ok((space, get_response));
 }
 
-/// TODO: Documentation
+/// Get campus information
+///
+/// Get all spaces from Fenix. Search all spaces for the provided campus name.
+/// If campus is found get its id and perform another GET request with the new
+/// id. Read response serialize it and return the Result.
+///
+/// # Argument
+/// * campus => Campus to search for.
+///
+/// # Return Value
+/// Result with the object and raw string. Error has a UserError.
 pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
-    let space = match get_spaces() {
+    // Get all spaces
+    let space: Space = match get_spaces() {
         Ok(space) => space.0,
         Err(err) => {
             return Err(err);
