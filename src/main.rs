@@ -4,10 +4,11 @@ extern crate fenix_rooms;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
-#[macro_use]
 extern crate serde_json;
+extern crate pencil;
 
-use fenix_rooms::utils::get_request;
+use fenix_rooms::api::handlers;
+use pencil::Pencil;
 
 fn main() {
     let mut app = Pencil::new("~/fenix-rooms/src");
@@ -28,10 +29,10 @@ fn main() {
     // REST API
     // The REST API will only return JSON enconded responses.
     // ///////////////////////////////////////////////////////
-    app.get("/api/spaces", "spaces_handler", spaces_handler);
-    app.get("/api/<campus:string>/building",
-            "get_building",
-            get_building);
+    app.get("/api/spaces", "spaces_handler", handlers::spaces_handler);
+    app.get("/api/<campus:string>",
+            "campus_handler",
+            handlers::campus_handler);
     // app.post("/api/create_user", "create_user", create_user);
 
     // Run server

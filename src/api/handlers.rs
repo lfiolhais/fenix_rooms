@@ -1,8 +1,7 @@
 //! Handlers for the REST API
-extern crate pencil;
-
-use pencil::{Pencil, Request, Response, PencilResult};
-use pencil::{UserError, PenUserError};
+use super::pencil::{Pencil, Request, Response, PencilResult};
+use super::pencil::{UserError, PenUserError};
+use super::getters;
 
 /// Handler for all spaces at IST
 ///
@@ -19,9 +18,9 @@ use pencil::{UserError, PenUserError};
 /// # Return Value
 /// Error if the `get_campi()` fails. Otherwise read the contents and send it as
 /// JSON.
-fn spaces_handler(_: &mut Request) -> PencilResult {
+pub fn spaces_handler(_: &mut Request) -> PencilResult {
     // Get all spaces from Fenix
-    let space = match get_campi() {
+    let space: String = match getters::get_spaces() {
         Ok(space) => space.1,
         Err(err) => {
             return Err(PenUserError(err));
@@ -33,4 +32,30 @@ fn spaces_handler(_: &mut Request) -> PencilResult {
     response.set_content_type("application/json");
 
     return Ok(response);
+}
+
+pub fn campus_handler(request: &mut Request) -> PencilResult {
+    // Get Campus
+    let my_campus: &str = match request.view_args.get("campus") {
+        Some(my_campus) => my_campus as &str,
+        None => "",
+    };
+
+    if my_campus.is_empty() {
+        let error = UserError::new("The campus field is empty");
+        return Err(PenUserError(error));
+    } else {
+        let campus: String = match getters::get_campi(my_campus) {
+            Ok(campus) => campus.1,
+            Err(err) => {
+                return Err(PenUserError(err));
+            }
+        };
+
+        // Build response and set content to JSON
+        let mut response = Response::from(campus);
+        response.set_content_type("application/json");
+
+        return Ok(response);
+    }
 }

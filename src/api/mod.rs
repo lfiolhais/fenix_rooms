@@ -1,7 +1,4 @@
-pub mod handlers;
-
-extern crate serde_derive;
-extern crate serde;
+extern crate pencil;
 
 use std::collections::HashMap;
 
@@ -30,7 +27,7 @@ struct Building {
 }
 
 #[derive(Deserialize)]
-struct Campus {
+pub struct Campus {
     #[serde(rename="type")]
     type_name: String,
     id: String,
@@ -40,3 +37,6 @@ struct Campus {
 }
 
 type Space = Vec<HashMap<String, String>>;
+
+pub mod handlers;
+mod getters;
