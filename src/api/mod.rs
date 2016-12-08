@@ -38,5 +38,7 @@ pub struct Campus {
 
 type Space = Vec<HashMap<String, String>>;
 
+const FENIX_BASE_URL: &'static str = "https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces";
+
 pub mod handlers;
 mod getters;

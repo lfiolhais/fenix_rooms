@@ -3,6 +3,7 @@ extern crate serde_json;
 
 use super::pencil::UserError;
 use super::{Space, Campus, Building, ContainedSpace};
+use super::FENIX_BASE_URL;
 use utils;
 
 /// Get all spaces at from Fenix
@@ -14,8 +15,7 @@ use utils;
 /// Result of the transaction with a Space and String tuple and a UserError.
 pub fn get_spaces() -> Result<(Space, String), UserError> {
     // Send GET request to the url
-    let get_response = match utils::get_request("https://fenix.tecnico.ulisboa.\
-                                                 pt/api/fenix/v1/spaces") {
+    let get_response = match utils::get_request(FENIX_BASE_URL) {
         Ok(res) => res,
         Err(err) => {
             let error = UserError::new(err);
@@ -66,8 +66,7 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
 
     println!("The id found for {} is: {}", campus, fenix_campus_id);
 
-    let url = &format!("https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces/{}",
-                       fenix_campus_id);
+    let url = &format!("{}{}", FENIX_BASE_URL, fenix_campus_id);
 
     let response = match utils::get_request(url) {
         Ok(response) => response,

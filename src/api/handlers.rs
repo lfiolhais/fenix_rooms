@@ -1,11 +1,14 @@
 //! Handlers for the REST API
-use super::pencil::{Pencil, Request, Response, PencilResult};
+//!
+//! Each handler reads the request if need be, gets the information from getters
+//! and returns a Response accordingly,
+use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
 use super::getters;
 
 /// Handler for all spaces at IST
 ///
-/// The handler calls `get_campi()` to perform the GET request required. If the
+/// The handler calls `get_spaces()` to perform the GET request required. If the
 /// request was successful its contents will be sent as JSON. Otherwise an error
 /// will be sent, provided by the function.
 ///
@@ -34,28 +37,36 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
     return Ok(response);
 }
 
+/// Handler for a campus at IST
+///
+/// The handler calls `get_campi(campus)` to perform the GET request required
+/// and search the contents for a match. If the request was successful its
+/// contents will be sent as JSON. Otherwise an error will be sent, provided by
+/// the function.
+///
+/// # Return Value
+/// Error if somehow the campus field is empty and the getter
+/// errors. Otherwise JSON contents are sent.
 pub fn campus_handler(request: &mut Request) -> PencilResult {
     // Get Campus
     let my_campus: &str = match request.view_args.get("campus") {
         Some(my_campus) => my_campus as &str,
-        None => "",
+        None => {
+            let error = UserError::new("The campus field is empty");
+            return Err(PenUserError(error));
+        }
     };
 
-    if my_campus.is_empty() {
-        let error = UserError::new("The campus field is empty");
-        return Err(PenUserError(error));
-    } else {
-        let campus: String = match getters::get_campi(my_campus) {
-            Ok(campus) => campus.1,
-            Err(err) => {
-                return Err(PenUserError(err));
-            }
-        };
+    let campus: String = match getters::get_campi(my_campus) {
+        Ok(campus) => campus.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
 
-        // Build response and set content to JSON
-        let mut response = Response::from(campus);
-        response.set_content_type("application/json");
+    // Build response and set content to JSON
+    let mut response = Response::from(campus);
+    response.set_content_type("application/json");
 
-        return Ok(response);
-    }
+    return Ok(response);
 }
