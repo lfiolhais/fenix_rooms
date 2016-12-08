@@ -39,3 +39,30 @@ pub fn get_request(url: &str) -> Result<String, String> {
         return Err(error);
     }
 }
+
+/// Remove all accents from a Portuguese string
+///
+/// This might be the dumbest code...
+///
+/// # Arguments
+/// * string => String to convert to sane characters.
+///
+/// # Return Value
+/// Sane String
+pub fn remove_accents(string: &String) -> String {
+    let result: String = string.to_lowercase()
+        .replace(" ", "-")
+        .replace("á", "a")
+        .replace("à", "a")
+        .replace("ã", "a")
+        .replace("â", "a")
+        .replace("é", "e")
+        .replace("ê", "e")
+        .replace("ó", "o")
+        .replace("ô", "o")
+        .replace("õ", "o")
+        .replace("ú", "u")
+        .replace("ç", "c");
+
+    return result;
+}

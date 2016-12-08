@@ -53,7 +53,8 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
     // This needs to work for the other campus "Tecnológico e Nuclear"
     let mut fenix_campus_id: &String = &format!("");
     for c in &space {
-        if c.get("name").unwrap().to_lowercase() == *campus {
+        let std_string: String = utils::remove_accents(c.get("name").unwrap());
+        if std_string == campus {
             fenix_campus_id = c.get("id").unwrap();
             break;
         }
@@ -66,7 +67,7 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
 
     println!("The id found for {} is: {}", campus, fenix_campus_id);
 
-    let url = &format!("{}{}", FENIX_BASE_URL, fenix_campus_id);
+    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_campus_id);
 
     let response = match utils::get_request(url) {
         Ok(response) => response,
