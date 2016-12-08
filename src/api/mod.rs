@@ -13,7 +13,7 @@ struct ContainedSpace {
 }
 
 #[derive(Deserialize)]
-struct Building {
+pub struct Building {
     #[serde(rename="type")]
     type_name: String,
     id: String,

@@ -70,3 +70,46 @@ pub fn campus_handler(request: &mut Request) -> PencilResult {
 
     return Ok(response);
 }
+
+/// Handler for a building at IST
+///
+/// The handler calls `get_building(building, campus)` to perform the GET
+/// request required and search the contents for a match. If the request was
+/// successful its contents will be sent as JSON. Otherwise an error will be
+/// sent, provided by the function.
+///
+/// # Return Value
+/// Error if somehow the campus field is empty and the getter
+/// errors. Otherwise JSON contents are sent.
+pub fn building_handler(request: &mut Request) -> PencilResult {
+    // Get Campus
+    let my_campus: &str = match request.view_args.get("campus") {
+        Some(my_campus) => my_campus as &str,
+        None => {
+            let error = UserError::new("The campus field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    // Get Building
+    let my_building: &str = match request.view_args.get("building") {
+        Some(my_building) => my_building as &str,
+        None => {
+            let error = UserError::new("The building field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    let building: String = match getters::get_buildings(my_campus, my_building) {
+        Ok(building) => building.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    // Build response and set content to JSON
+    let mut response = Response::from(building);
+    response.set_content_type("application/json");
+
+    return Ok(response);
+}

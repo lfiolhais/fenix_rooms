@@ -33,6 +33,15 @@ fn main() {
     app.get("/api/<campus:string>",
             "campus_handler",
             handlers::campus_handler);
+    app.get("/api/<campus:string>/<building:string>",
+            "building_handler",
+            handlers::building_handler);
+    // app.get("/api/<campus:string>/<building:string>/<floor:int>",
+    //         "floor_handler",
+    //         handlers::floor_handler);
+    // app.get("/api/<campus:string>/<building:string>/<floor:int>/<room:string>",
+    //         "room_handler",
+    //         handlers::room_handler);
     // app.post("/api/create_user", "create_user", create_user);
 
     // Run server

@@ -50,7 +50,6 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
         }
     };
 
-    // This needs to work for the other campus "Tecnológico e Nuclear"
     let mut fenix_campus_id: &String = &format!("");
     for c in &space {
         let std_string: String = utils::remove_accents(c.get("name").unwrap());
@@ -77,7 +76,67 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
         }
     };
 
-    let building: Campus = serde_json::from_str(&response).unwrap();
+    let campus: Campus = serde_json::from_str(&response).unwrap();
+
+    return Ok((campus, response));
+}
+
+/// Get building information
+///
+/// Get all spaces from Fenix. Search all spaces for the provided campus name.
+/// If campus is found get its id and perform another GET request with the new
+/// id. Get all buildings from Fenix with the specified campus. Search all
+/// buildings for the provided building name. Read response serialize it and
+/// return the Result.
+///
+/// # Argument
+/// * campus => Campus to search for.
+///
+/// # Return Value
+/// Result with the object and raw string. Error has a UserError.
+pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String), UserError> {
+    // Get all spaces
+    let campi: Campus = match get_campi(campus) {
+        Ok(campi) => campi.0,
+        Err(err) => {
+            return Err(err);
+        }
+    };
+
+    // This needs to work for the other campus "Tecnológico e Nuclear"
+    let mut fenix_building_id: &String = &format!("");
+    for c in &campi.contained_spaces {
+        let std_string: String = utils::remove_accents(&c.name);
+        println!("Test String: {}", std_string);
+        if std_string == building {
+            fenix_building_id = &c.id;
+            break;
+        }
+    }
+
+    if fenix_building_id.is_empty() {
+        let error = UserError::new(format!("There was no building found at {} with name: {}",
+                                           campus,
+                                           building));
+        return Err(error);
+    }
+
+    println!("The id found for {} at {} is: {}",
+             building,
+             campus,
+             fenix_building_id);
+
+    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_building_id);
+
+    let response = match utils::get_request(url) {
+        Ok(response) => response,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(error);
+        }
+    };
+
+    let building: Building = serde_json::from_str(&response).unwrap();
 
     return Ok((building, response));
 }
