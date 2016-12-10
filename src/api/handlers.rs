@@ -114,6 +114,7 @@ pub fn building_handler(request: &mut Request) -> PencilResult {
     return Ok(response);
 }
 
+/// TODO
 pub fn floor_handler(request: &mut Request) -> PencilResult {
     // Get Campus
     let my_campus: &str = match request.view_args.get("campus") {

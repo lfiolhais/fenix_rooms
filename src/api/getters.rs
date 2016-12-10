@@ -184,6 +184,7 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
     return Ok((floor, response));
 }
 
+/// TODO
 pub fn get_floor_from_floor(parent_floor: &String,
                             floor: &str)
                             -> Result<(Floor, String), UserError> {
