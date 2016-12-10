@@ -51,7 +51,7 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
     let mut fenix_campus_id: &String = &format!("");
     for c in &space {
         let std_string: String = utils::sanitize_string(&c.name);
-        if std_string == campus {
+        if std_string == campus && c.type_name == "CAMPUS"{
             fenix_campus_id = &c.id;
             break;
         }
@@ -155,7 +155,7 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
     let mut fenix_floor_id: &String = &format!("");
     for c in &buildings.contained_spaces {
         let std_string: String = utils::sanitize_string(&c.name);
-        if std_string == floor {
+        if std_string == floor && c.type_name = "FLOOR" {
             fenix_floor_id = &c.id;
             break;
         }
@@ -196,7 +196,7 @@ pub fn get_floor_from_floor(parent_floor: &String,
     for c in &parent_floor_obj.contained_spaces {
         let std_string: String = utils::sanitize_string(&c.name);
         println!("Test String: {}", std_string);
-        if std_string == floor {
+        if std_string == floor && c.type_name == "FLOOR" {
             fenix_floor_id = &c.id;
             break;
         }
