@@ -40,7 +40,8 @@ pub fn get_request(url: &str) -> Result<String, String> {
     }
 }
 
-/// Remove all accents from a Portuguese string
+/// Remove all accents and other non-pleasant characters from a Portuguese
+/// string
 ///
 /// This might be the dumbest code...
 ///
@@ -49,7 +50,7 @@ pub fn get_request(url: &str) -> Result<String, String> {
 ///
 /// # Return Value
 /// Sane String
-pub fn remove_accents(string: &String) -> String {
+pub fn sanitize_string(string: &String) -> String {
     let result: String = string.to_lowercase()
         .replace(" ", "-")
         .replace("/", "_")

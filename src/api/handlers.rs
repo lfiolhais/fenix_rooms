@@ -113,3 +113,45 @@ pub fn building_handler(request: &mut Request) -> PencilResult {
 
     return Ok(response);
 }
+
+pub fn floor_handler(request: &mut Request) -> PencilResult {
+    // Get Campus
+    let my_campus: &str = match request.view_args.get("campus") {
+        Some(my_campus) => my_campus as &str,
+        None => {
+            let error = UserError::new("The campus field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    // Get Building
+    let my_building: &str = match request.view_args.get("building") {
+        Some(my_building) => my_building as &str,
+        None => {
+            let error = UserError::new("The building field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    // Get Floor
+    let my_floor: &str = match request.view_args.get("floor") {
+        Some(my_floor) => my_floor as &str,
+        None => {
+            let error = UserError::new("The floor field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    let floor: String = match getters::get_floors(my_campus, my_building, my_floor) {
+        Ok(floor) => floor.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    // Build response and set content to JSON
+    let mut response = Response::from(floor);
+    response.set_content_type("application/json");
+
+    return Ok(response);
+}

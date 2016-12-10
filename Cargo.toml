@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
 
 [dependencies]
-pencil = "0.3.0"
+pencil = { git = "https://github.com/lfiolhais/pencil", branch = "feature/neg-num"}
 log = "0.3"
 env_logger = "*"
 hyper = "*"
