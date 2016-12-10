@@ -62,8 +62,6 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
         return Err(error);
     }
 
-    println!("The id found for {} is: {}", campus, fenix_campus_id);
-
     let url = &format!("{}/{}", FENIX_BASE_URL, fenix_campus_id);
 
     let response = match utils::get_request(url) {
@@ -104,7 +102,6 @@ pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String),
     let mut fenix_building_id: &String = &format!("");
     for c in &campi.contained_spaces {
         let std_string: String = utils::sanitize_string(&c.name);
-        println!("Test String: {}", std_string);
         if std_string == building {
             fenix_building_id = &c.id;
             break;
@@ -118,11 +115,6 @@ pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String),
         return Err(error);
     }
 
-    println!("The id found for {} at {} is: {}",
-             building,
-             campus,
-             fenix_building_id);
-
     let url = &format!("{}/{}", FENIX_BASE_URL, fenix_building_id);
 
     let response = match utils::get_request(url) {
@@ -133,11 +125,8 @@ pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String),
         }
     };
 
-    println!("TESTE");
-    println!("Response: {:?}", response);
     let building: Building = serde_json::from_str(&response).unwrap();
 
-    println!("TESTE");
     return Ok((building, response));
 }
 
@@ -166,7 +155,6 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
     let mut fenix_floor_id: &String = &format!("");
     for c in &buildings.contained_spaces {
         let std_string: String = utils::sanitize_string(&c.name);
-        println!("Test String: {}", std_string);
         if std_string == floor {
             fenix_floor_id = &c.id;
             break;
@@ -181,10 +169,44 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
         return Err(error);
     }
 
-    println!("The id found for {} at {} is: {}",
-             building,
-             campus,
-             fenix_floor_id);
+    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_floor_id);
+
+    let response = match utils::get_request(url) {
+        Ok(response) => response,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(error);
+        }
+    };
+
+    let floor: Floor = serde_json::from_str(&response).unwrap();
+
+    return Ok((floor, response));
+}
+
+pub fn get_floor_from_floor(parent_floor: &String,
+                            floor: &str)
+                            -> Result<(Floor, String), UserError> {
+    // Convert the string to object
+    let parent_floor_obj: Floor = serde_json::from_str(&parent_floor).unwrap();
+
+    // Get floor id from Floor struct
+    let mut fenix_floor_id: &String = &format!("");
+    for c in &parent_floor_obj.contained_spaces {
+        let std_string: String = utils::sanitize_string(&c.name);
+        println!("Test String: {}", std_string);
+        if std_string == floor {
+            fenix_floor_id = &c.id;
+            break;
+        }
+    }
+
+    if fenix_floor_id.is_empty() {
+        let error = UserError::new("There was no floor found");
+        return Err(error);
+    }
+
+    println!("The id found is: {}", fenix_floor_id);
 
     let url = &format!("{}/{}", FENIX_BASE_URL, fenix_floor_id);
 

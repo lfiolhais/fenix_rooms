@@ -12,9 +12,9 @@ use pencil::Pencil;
 
 fn main() {
     let mut app = Pencil::new("~/fenix-rooms/src");
-    app.set_debug(true);
-    app.set_log_level();
-    env_logger::init().unwrap();
+    // app.set_debug(true);
+    // app.set_log_level();
+    // env_logger::init().unwrap();
 
     // ///////////////////////////////////////////////////////
     // Routing
@@ -37,6 +37,9 @@ fn main() {
             "building_handler",
             handlers::building_handler);
     app.get("/api/<campus:string>/<building:string>/<floor:int>",
+            "floor_handler",
+            handlers::floor_handler);
+    app.get("/api/<campus:string>/<building:string>/<floor:int>/<floor2:int>",
             "floor_handler",
             handlers::floor_handler);
     // app.get("/api/<campus:string>/<building:string>/<floor:int>/<room:string>",

@@ -355,7 +355,7 @@ dependencies = [
 [[package]]
 name = "pencil"
 version = "0.3.0"
-source = "git+https://github.com/lfiolhais/pencil?branch=feature/neg-num#b93b05373976f887e2084b27fbc55cb7e5fc5c94"
+source = "git+https://github.com/lfiolhais/pencil?branch=feature/neg-num#f42cef34fc7b67b60a3a25e38ec56a910c4a7a11"
 dependencies = [
  "formdata 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "handlebars 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
