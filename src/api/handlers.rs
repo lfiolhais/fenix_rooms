@@ -149,7 +149,7 @@ pub fn floor_handler(request: &mut Request) -> PencilResult {
     // only return digits not strings so we are safe!
     let my_floor2: &str = match request.view_args.get("floor2") {
         Some(my_floor2) => my_floor2 as &str,
-        None => "NO_ROOM",
+        None => "",
     };
 
     let mut floor: String = match getters::get_floors(my_campus, my_building, my_floor) {
@@ -159,7 +159,7 @@ pub fn floor_handler(request: &mut Request) -> PencilResult {
         }
     };
 
-    if my_floor2 != "NO_ROOM" {
+    if !my_floor2.is_empty() {
         floor = match getters::get_floor_from_floor(&floor, my_floor2) {
             Ok(floor) => floor.1,
             Err(err) => {
@@ -170,6 +170,87 @@ pub fn floor_handler(request: &mut Request) -> PencilResult {
 
     // Build response and set content to JSON
     let mut response = Response::from(floor);
+    response.set_content_type("application/json");
+
+    return Ok(response);
+}
+
+/// TODO
+pub fn room_handler(request: &mut Request) -> PencilResult {
+    // //////////////////////////////////////////
+    // Get Arguments
+    // //////////////////////////////////////////
+
+    // Get Campus
+    let my_campus: &str = match request.view_args.get("campus") {
+        Some(my_campus) => my_campus as &str,
+        None => {
+            let error = UserError::new("The campus field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    // Get Room
+    let my_room: &str = match request.view_args.get("room") {
+        Some(my_room) => my_room as &str,
+        None => {
+            let error = UserError::new("The room field is empty");
+            return Err(PenUserError(error));
+        }
+    };
+
+    let mut args: Vec<&str> = vec![my_campus, my_room];
+
+    // Get Building
+    //
+    // Return an empty string when the arg is empty
+    let my_building: &str = match request.view_args.get("building") {
+        Some(my_building) => my_building as &str,
+        None => "",
+    };
+
+    if !my_building.is_empty() {
+        args.push(my_building as &str);
+    }
+
+    // Get Floor
+    //
+    // Return an impossible value to get from the args. The regex matching will
+    // only return digits not strings so we are safe!
+    let my_floor: &str = match request.view_args.get("floor") {
+        Some(my_floor) => my_floor as &str,
+        None => "",
+    };
+
+    if !my_floor.is_empty() {
+        args.push(my_floor as &str);
+    }
+
+    // Get Floor2
+    //
+    // Return an impossible value to get from the args. The regex matching will
+    // only return digits not strings so we are safe!
+    let my_floor2: &str = match request.view_args.get("floor2") {
+        Some(my_floor2) => my_floor2 as &str,
+        None => "",
+    };
+
+    if !my_floor2.is_empty() {
+        args.push(my_floor2 as &str);
+    }
+
+    // //////////////////////////////////////////
+    // Build Response
+    // //////////////////////////////////////////
+    let mut room: String = match getters::get_rooms(&args) {
+        Ok(room) => room.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    // Build response and set content to JSON
+    let mut response = Response::from(room);
     response.set_content_type("application/json");
 
     return Ok(response);

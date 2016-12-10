@@ -1,7 +1,5 @@
 extern crate pencil;
 
-use std::collections::HashMap;
-
 // Basic Structs
 #[derive(Deserialize)]
 pub struct Room {
@@ -15,9 +13,8 @@ pub struct Room {
     contained_spaces: Vec<ContainedSpace>,
     #[serde(rename="parentSpace")]
     parent_space: ParentSpace,
-    descritpion: String,
+    description: String,
     capacity: Capacity,
-    events: Event,
 }
 
 #[derive(Deserialize)]
@@ -68,22 +65,9 @@ struct Period {
 }
 
 #[derive(Deserialize)]
-struct Event {
-    #[serde(rename="type")]
-    type_name: String,
-    start: String,
-    end: String,
-    weekday: String,
-    day: String,
-    period: Period,
-    description: String,
-    title: String,
-}
-
-#[derive(Deserialize)]
 struct Capacity {
-    normal: String,
-    exam: String,
+    normal: u64,
+    exam: u64,
 }
 
 #[derive(Deserialize)]

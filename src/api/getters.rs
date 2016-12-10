@@ -2,7 +2,7 @@
 extern crate serde_json;
 
 use super::pencil::UserError;
-use super::{Space, Campus, Building, Floor, Room};
+use super::{Space, Campus, Building, Floor, Room, ContainedSpace};
 use super::FENIX_BASE_URL;
 use utils;
 
@@ -207,8 +207,6 @@ pub fn get_floor_from_floor(parent_floor: &String,
         return Err(error);
     }
 
-    println!("The id found is: {}", fenix_floor_id);
-
     let url = &format!("{}/{}", FENIX_BASE_URL, fenix_floor_id);
 
     let response = match utils::get_request(url) {
@@ -222,4 +220,78 @@ pub fn get_floor_from_floor(parent_floor: &String,
     let floor: Floor = serde_json::from_str(&response).unwrap();
 
     return Ok((floor, response));
+}
+
+/// TODO
+pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
+    // Get the contained spaces inside each struct
+    let contained_spaces: Vec<ContainedSpace> = match args.len() {
+        2 => {
+            match get_campi(args[0]) {
+                Ok(campus) => campus.0.contained_spaces,
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        }
+
+        3 => {
+            match get_buildings(args[0], args[2]) {
+                Ok(building) => building.0.contained_spaces,
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        }
+        4 => {
+            match get_floors(args[0], args[2], args[3]) {
+                Ok(floor) => floor.0.contained_spaces,
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        }
+        5 => {
+            let floor_string = match get_floors(args[0], args[2], args[3]) {
+                Ok(floor) => floor.1,
+                Err(err) => {
+                    return Err(err);
+                }
+            };
+
+            match get_floor_from_floor(&floor_string, args[4]) {
+                Ok(floor) => floor.0.contained_spaces,
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        }
+        _ => {
+            let error = UserError::new("Error");
+            return Err(error);
+        }
+    };
+
+    let mut fenix_room_id: &String = &format!("");
+    for i in &contained_spaces {
+        println!("TEST: {}", i.name);
+        if i.type_name == "ROOM" && i.name != "" && utils::sanitize_string(&i.name) == args[1] {
+            fenix_room_id = &i.id;
+            break;
+        }
+    }
+
+    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_room_id);
+
+    let response = match utils::get_request(url) {
+        Ok(response) => response,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(error);
+        }
+    };
+
+    let room: Room = serde_json::from_str(&response).unwrap();
+
+    return Ok((room, response));
 }
