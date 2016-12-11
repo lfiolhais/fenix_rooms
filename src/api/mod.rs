@@ -1,14 +1,20 @@
+//! REST API
+//!
+//! The API has five handlers depending on the request. In `getters.rs` the
+//! information received is parsed and proecessed.
 extern crate pencil;
 
+// ///////////////////////////////////////////////////////////
 // Basic Structs
+// ///////////////////////////////////////////////////////////
 #[derive(Deserialize)]
 pub struct Room {
     #[serde(rename="type")]
     type_name: String,
     id: String,
     name: String,
-    #[serde(rename="topLevelSpace")]
-    top_level_space: TopLevelSpace,
+    // #[serde(rename="topLevelSpace")]
+    // top_level_space: TopLevelSpace,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
     #[serde(rename="parentSpace")]
@@ -23,8 +29,8 @@ pub struct Floor {
     type_name: String,
     id: String,
     name: String,
-    #[serde(rename="topLevelSpace")]
-    top_level_space: TopLevelSpace,
+    // #[serde(rename="topLevelSpace")]
+    // top_level_space: TopLevelSpace,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
     #[serde(rename="parentSpace")]
@@ -37,8 +43,8 @@ pub struct Building {
     type_name: String,
     id: String,
     name: String,
-    #[serde(rename="topLevelSpace")]
-    top_level_space: TopLevelSpace,
+    // #[serde(rename="topLevelSpace")]
+    // top_level_space: TopLevelSpace,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
     #[serde(rename="parentSpace")]
@@ -57,7 +63,9 @@ pub struct Campus {
 
 type Space = Vec<ContainedSpace>;
 
+// ///////////////////////////////////////////////////////////
 // Helper Structs
+// ///////////////////////////////////////////////////////////
 #[derive(Deserialize)]
 struct Period {
     start: String,
@@ -89,9 +97,13 @@ pub struct ContainedSpace {
 
 type ParentSpace = TopLevelSpace;
 
+// ///////////////////////////////////////////////////////////
 // Constants
+// ///////////////////////////////////////////////////////////
 const FENIX_BASE_URL: &'static str = "https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces";
 
+// ///////////////////////////////////////////////////////////
 // Modules
+// ///////////////////////////////////////////////////////////
 pub mod handlers;
 mod getters;
