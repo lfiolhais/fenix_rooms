@@ -2,12 +2,25 @@
 name = "fenix_rooms"
 version = "0.1.0"
 authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
+description = "Rust API for room management using FenixEDU API"
+
+[lib]
+name = "fenix_rooms"
+path = "src/lib.rs"
+doc = true
+
+[[bin]]
+name = "server"
+path = "src/bin/main.rs"
 
 [dependencies]
-pencil = { git = "https://github.com/lfiolhais/pencil", branch = "feature/neg-num"}
 log = "0.3"
 env_logger = "*"
 hyper = "*"
 serde_json = "0.8"
 serde_derive = "0.8"
 serde = "0.8.19"
+
+[dependencies.pencil]
+git = "https://github.com/lfiolhais/pencil"
+branch = "feature/neg-num"
