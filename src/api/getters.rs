@@ -35,7 +35,7 @@ pub fn get_spaces() -> Result<(Space, String), UserError> {
 /// id. Read response serialize it and return the Result.
 ///
 /// # Argument
-/// * campus => Campus to search for.
+/// * campus => Campus name to search for.
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
@@ -48,29 +48,13 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
         }
     };
 
-    let mut fenix_campus_id: &String = &format!("");
-    for c in &space {
-        let std_string: String = utils::sanitize_string(&c.name);
-        if std_string == campus && c.type_name == "CAMPUS"{
-            fenix_campus_id = &c.id;
-            break;
-        }
-    }
-
-    if fenix_campus_id.is_empty() {
-        let error = UserError::new(format!("There was no campus found with name: {}", campus));
-        return Err(error);
-    }
-
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_campus_id);
-
-    let response = match utils::get_request(url) {
-        Ok(response) => response,
-        Err(err) => {
-            let error = UserError::new(err);
-            return Err(error);
-        }
-    };
+    let response: String =
+        match search_contained_spaces("CAMPUS", campus, &space) {
+            Ok(response) => response,
+            Err(err) => {
+                return Err(err);
+            }
+        };
 
     let campus: Campus = serde_json::from_str(&response).unwrap();
 
@@ -86,7 +70,8 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
 /// return the Result.
 ///
 /// # Argument
-/// * campus => Campus to search for.
+/// * campus => Campus name to search for
+/// * building => Building name to search for
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
@@ -99,47 +84,32 @@ pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String),
         }
     };
 
-    let mut fenix_building_id: &String = &format!("");
-    for c in &campi.contained_spaces {
-        let std_string: String = utils::sanitize_string(&c.name);
-        if std_string == building {
-            fenix_building_id = &c.id;
-            break;
-        }
-    }
-
-    if fenix_building_id.is_empty() {
-        let error = UserError::new(format!("There was no building found at {} with name: {}",
-                                           campus,
-                                           building));
-        return Err(error);
-    }
-
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_building_id);
-
-    let response = match utils::get_request(url) {
-        Ok(response) => response,
-        Err(err) => {
-            let error = UserError::new(err);
-            return Err(error);
-        }
-    };
+    let response: String =
+        match search_contained_spaces("BUILDING", building, &campi.contained_spaces) {
+            Ok(response) => response,
+            Err(err) => {
+                return Err(err);
+            }
+        };
 
     let building: Building = serde_json::from_str(&response).unwrap();
 
     return Ok((building, response));
 }
 
-/// Get building information
+/// Get floor information
 ///
-/// Get all spaces from Fenix. Search all spaces for the provided campus name.
-/// If campus is found get its id and perform another GET request with the new
-/// id. Get all buildings from Fenix with the specified campus. Search all
-/// buildings for the provided building name. Read response serialize it and
-/// return the Result.
+/// Get the specified floor from Fenix. Search all spaces for the provided
+/// campus name. If campus is found get its id and perform another GET request
+/// with the new id. Get all buildings from Fenix with the specified campus.
+/// Search all buildings for the provided building name. Get all floors from
+/// Fenix with the specified floor number. Search all floors for the provided
+/// number. Read response serialize it and return the Result.
 ///
 /// # Argument
-/// * campus => Campus to search for.
+/// * campus => Campus name to search for.
+/// * building => Building name to search for
+/// * floor => Floor number to search for
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
@@ -152,77 +122,57 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
         }
     };
 
-    let mut fenix_floor_id: &String = &format!("");
-    for c in &buildings.contained_spaces {
-        let std_string: String = utils::sanitize_string(&c.name);
-        if std_string == floor && c.type_name = "FLOOR" {
-            fenix_floor_id = &c.id;
-            break;
-        }
-    }
-
-    if fenix_floor_id.is_empty() {
-        let error = UserError::new(format!("There was no floor found in {} at {} with name: {}",
-                                           building,
-                                           campus,
-                                           floor));
-        return Err(error);
-    }
-
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_floor_id);
-
-    let response = match utils::get_request(url) {
-        Ok(response) => response,
-        Err(err) => {
-            let error = UserError::new(err);
-            return Err(error);
-        }
-    };
+    let response: String =
+        match search_contained_spaces("FLOOR", floor, &buildings.contained_spaces) {
+            Ok(response) => response,
+            Err(err) => {
+                return Err(err);
+            }
+        };
 
     let floor: Floor = serde_json::from_str(&response).unwrap();
 
     return Ok((floor, response));
 }
 
-/// TODO
+/// Get floor information from another floor
+///
+/// From the floor information given by `get_floor()` search for another floor.
+///
+/// # Argument
+/// * parent_floor => Parent floor that contains the floors to search for.
+/// * floor => Floor number to search for
+///
+/// # Return Value
+/// Result with the object and raw string. Error has a UserError.
 pub fn get_floor_from_floor(parent_floor: &String,
                             floor: &str)
                             -> Result<(Floor, String), UserError> {
     // Convert the string to object
     let parent_floor_obj: Floor = serde_json::from_str(&parent_floor).unwrap();
 
-    // Get floor id from Floor struct
-    let mut fenix_floor_id: &String = &format!("");
-    for c in &parent_floor_obj.contained_spaces {
-        let std_string: String = utils::sanitize_string(&c.name);
-        println!("Test String: {}", std_string);
-        if std_string == floor && c.type_name == "FLOOR" {
-            fenix_floor_id = &c.id;
-            break;
-        }
-    }
-
-    if fenix_floor_id.is_empty() {
-        let error = UserError::new("There was no floor found");
-        return Err(error);
-    }
-
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_floor_id);
-
-    let response = match utils::get_request(url) {
-        Ok(response) => response,
-        Err(err) => {
-            let error = UserError::new(err);
-            return Err(error);
-        }
-    };
+    let response: String =
+        match search_contained_spaces("FLOOR", floor, &parent_floor_obj.contained_spaces) {
+            Ok(response) => response,
+            Err(err) => {
+                return Err(err);
+            }
+        };
 
     let floor: Floor = serde_json::from_str(&response).unwrap();
 
     return Ok((floor, response));
 }
 
-/// TODO
+/// Get room information
+///
+/// From the number of arguments get the necessary information.
+///
+/// # Argument
+/// * args => Vector that keeps all necessary arguments
+///
+/// # Return Value
+/// Result with the object and raw string. Error has a UserError.
 pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
     // Get the contained spaces inside each struct
     let contained_spaces: Vec<ContainedSpace> = match args.len() {
@@ -272,16 +222,41 @@ pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
         }
     };
 
-    let mut fenix_room_id: &String = &format!("");
-    for i in &contained_spaces {
-        println!("TEST: {}", i.name);
-        if i.type_name == "ROOM" && i.name != "" && utils::sanitize_string(&i.name) == args[1] {
-            fenix_room_id = &i.id;
+    let response: String = match search_contained_spaces("ROOM", args[1], &contained_spaces) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(err);
+        }
+    };
+
+    let room: Room = serde_json::from_str(&response).unwrap();
+
+    return Ok((room, response));
+}
+
+/// Search for a space with a specified type and name
+///
+/// # Argument
+/// * type_name => type of the space
+/// * name => name of the space
+/// * contained_spaces => spaces to search in
+///
+/// # Return Value:
+/// String with the GET response or an UserError
+fn search_contained_spaces(type_name: &str,
+                           name: &str,
+                           contained_spaces: &Vec<ContainedSpace>)
+                           -> Result<String, UserError> {
+    let mut fenix_id: &String = &format!("");
+    for i in contained_spaces {
+        if i.type_name == type_name && !i.name.is_empty() &&
+           utils::sanitize_string(&i.name) == name {
+            fenix_id = &i.id;
             break;
         }
     }
 
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_room_id);
+    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_id);
 
     let response = match utils::get_request(url) {
         Ok(response) => response,
@@ -291,7 +266,5 @@ pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
         }
     };
 
-    let room: Room = serde_json::from_str(&response).unwrap();
-
-    return Ok((room, response));
+    return Ok(response);
 }

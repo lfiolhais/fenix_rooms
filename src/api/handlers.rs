@@ -114,7 +114,18 @@ pub fn building_handler(request: &mut Request) -> PencilResult {
     return Ok(response);
 }
 
-/// TODO
+/// Handler for a floor at IST
+///
+/// The handler calls `get_floors(building, campus, floors)` to perform the GET
+/// request required and search the contents for a match. If the request was
+/// successful its contents will be sent as JSON. Otherwise an error will be
+/// sent, provided by the function. There may be a case where there are floors
+/// within floors. When that variable is set an extra GET request is performed
+/// by calling `get_floor_from_floor(&floor, name_of_floor)`.
+///
+/// # Return Value
+/// Error if somehow the campus field is empty and the getter
+/// errors. Otherwise JSON contents are sent.
 pub fn floor_handler(request: &mut Request) -> PencilResult {
     // Get Campus
     let my_campus: &str = match request.view_args.get("campus") {
@@ -175,7 +186,16 @@ pub fn floor_handler(request: &mut Request) -> PencilResult {
     return Ok(response);
 }
 
-/// TODO
+/// Handler for a room at IST
+///
+/// The handler calls `get_room(&args)` to perform the GET request required and
+/// search the contents for a match. If the request was successful its contents
+/// will be sent as JSON. Otherwise an error will be sent, provided by the
+/// function:.
+///
+/// # Return Value
+/// Error if somehow the campus field is empty and the getter
+/// errors. Otherwise JSON contents are sent.
 pub fn room_handler(request: &mut Request) -> PencilResult {
     // //////////////////////////////////////////
     // Get Arguments
@@ -242,7 +262,7 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
     // //////////////////////////////////////////
     // Build Response
     // //////////////////////////////////////////
-    let mut room: String = match getters::get_rooms(&args) {
+    let room: String = match getters::get_rooms(&args) {
         Ok(room) => room.1,
         Err(err) => {
             return Err(PenUserError(err));

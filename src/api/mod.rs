@@ -55,7 +55,7 @@ pub struct Campus {
     contained_spaces: Vec<ContainedSpace>,
 }
 
-type Space = Vec<TopLevelSpace>;
+type Space = Vec<ContainedSpace>;
 
 // Helper Structs
 #[derive(Deserialize)]
@@ -71,7 +71,7 @@ struct Capacity {
 }
 
 #[derive(Deserialize)]
-pub struct TopLevelSpace {
+struct TopLevelSpace {
     #[serde(rename="type")]
     type_name: String,
     id: String,
@@ -79,13 +79,12 @@ pub struct TopLevelSpace {
 }
 
 #[derive(Deserialize)]
-struct ContainedSpace {
+pub struct ContainedSpace {
     #[serde(rename="type")]
     type_name: String,
     id: String,
-    name: String,
-    #[serde(rename="topLevelSpace")]
-    top_level_space: TopLevelSpace,
+    name: String, /* #[serde(rename="topLevelSpace")]
+                   * top_level_space: TopLevelSpace, */
 }
 
 type ParentSpace = TopLevelSpace;
