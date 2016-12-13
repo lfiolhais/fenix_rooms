@@ -40,6 +40,42 @@ pub fn get_request(url: &str) -> Result<String, String> {
     }
 }
 
+/// Perform a POST request to the specified url
+///
+/// TODO
+///
+/// # Arguments
+/// * url => Specified URL to perform the GET request to.
+/// * body => Content to send
+///
+/// # Return Value
+/// The error message of the problem or the contents of the body.
+pub fn post_request(url: &str, body: &str) -> Result<String, String> {
+    // Create Hyper client to perform REST calls
+    let client = Client::new();
+
+    // Create and send GET request
+    let mut res = client.post(url).body(body).send().unwrap();
+
+    // Read content from response and write it to a buffer
+    let mut buf: String = String::new();
+    let read_size = match res.read_to_string(&mut buf) {
+        Ok(size) => size,
+        Err(err) => {
+            let error = format!("Problem while reading message body: {}", err);
+            return Err(error);
+        }
+    };
+
+    // Bail quietly when Fenix doesn't return information
+    if read_size != 0 {
+        return Ok(buf);
+    } else {
+        let error = format!("FenixEDU did not return any information");
+        return Err(error);
+    }
+}
+
 /// Remove all accents and other non-pleasant characters from a Portuguese
 /// string
 ///

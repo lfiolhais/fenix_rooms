@@ -2,7 +2,7 @@
 extern crate serde_json;
 
 use super::pencil::UserError;
-use super::{Space, Campus, Building, Floor, Room, ContainedSpace};
+use super::{Space, Room, GenericSpace, ContainedSpace};
 use super::FENIX_BASE_URL;
 use utils;
 
@@ -39,7 +39,7 @@ pub fn get_spaces() -> Result<(Space, String), UserError> {
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
-pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
+pub fn get_campi(campus: &str) -> Result<(GenericSpace, String), UserError> {
     // Get all spaces
     let space: Space = match get_spaces() {
         Ok(space) => space.0,
@@ -48,15 +48,14 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
         }
     };
 
-    let response: String =
-        match search_contained_spaces("CAMPUS", campus, &space) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(err);
-            }
-        };
+    let response: String = match search_contained_spaces(campus, &space) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(err);
+        }
+    };
 
-    let campus: Campus = serde_json::from_str(&response).unwrap();
+    let campus: GenericSpace = serde_json::from_str(&response).unwrap();
 
     return Ok((campus, response));
 }
@@ -75,24 +74,23 @@ pub fn get_campi(campus: &str) -> Result<(Campus, String), UserError> {
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
-pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String), UserError> {
+pub fn get_buildings(campus: &str, building: &str) -> Result<(GenericSpace, String), UserError> {
     // Get all spaces
-    let campi: Campus = match get_campi(campus) {
+    let campi: GenericSpace = match get_campi(campus) {
         Ok(campi) => campi.0,
         Err(err) => {
             return Err(err);
         }
     };
 
-    let response: String =
-        match search_contained_spaces("BUILDING", building, &campi.contained_spaces) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(err);
-            }
-        };
+    let response: String = match search_contained_spaces(building, &campi.contained_spaces) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(err);
+        }
+    };
 
-    let building: Building = serde_json::from_str(&response).unwrap();
+    let building: GenericSpace = serde_json::from_str(&response).unwrap();
 
     return Ok((building, response));
 }
@@ -113,24 +111,26 @@ pub fn get_buildings(campus: &str, building: &str) -> Result<(Building, String),
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
-pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, String), UserError> {
+pub fn get_floors(campus: &str,
+                  building: &str,
+                  floor: &str)
+                  -> Result<(GenericSpace, String), UserError> {
     // Get all buildings
-    let buildings: Building = match get_buildings(campus, building) {
+    let buildings: GenericSpace = match get_buildings(campus, building) {
         Ok(building) => building.0,
         Err(err) => {
             return Err(err);
         }
     };
 
-    let response: String =
-        match search_contained_spaces("FLOOR", floor, &buildings.contained_spaces) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(err);
-            }
-        };
+    let response: String = match search_contained_spaces(floor, &buildings.contained_spaces) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(err);
+        }
+    };
 
-    let floor: Floor = serde_json::from_str(&response).unwrap();
+    let floor: GenericSpace = serde_json::from_str(&response).unwrap();
 
     return Ok((floor, response));
 }
@@ -147,19 +147,19 @@ pub fn get_floors(campus: &str, building: &str, floor: &str) -> Result<(Floor, S
 /// Result with the object and raw string. Error has a UserError.
 pub fn get_floor_from_floor(parent_floor: &String,
                             floor: &str)
-                            -> Result<(Floor, String), UserError> {
+                            -> Result<(GenericSpace, String), UserError> {
     // Convert the string to object
-    let parent_floor_obj: Floor = serde_json::from_str(&parent_floor).unwrap();
+    let parent_floor_obj: GenericSpace = serde_json::from_str(&parent_floor).unwrap();
 
-    let response: String =
-        match search_contained_spaces("FLOOR", floor, &parent_floor_obj.contained_spaces) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(err);
-            }
-        };
+    let response: String = match search_contained_spaces(floor,
+                                                         &parent_floor_obj.contained_spaces) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(err);
+        }
+    };
 
-    let floor: Floor = serde_json::from_str(&response).unwrap();
+    let floor: GenericSpace = serde_json::from_str(&response).unwrap();
 
     return Ok((floor, response));
 }
@@ -173,43 +173,34 @@ pub fn get_floor_from_floor(parent_floor: &String,
 ///
 /// # Return Value
 /// Result with the object and raw string. Error has a UserError.
-pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
+pub fn get_rooms(args: &Vec<&str>, name: &str) -> Result<(Room, String, GenericSpace), UserError> {
     // Get the contained spaces inside each struct
     let contained_spaces: Vec<ContainedSpace> = match args.len() {
         2 => {
-            match get_campi(args[0]) {
-                Ok(campus) => campus.0.contained_spaces,
-                Err(err) => {
-                    return Err(err);
-                }
-            }
-        }
-
-        3 => {
-            match get_buildings(args[0], args[2]) {
+            match get_buildings(args[0], args[1]) {
                 Ok(building) => building.0.contained_spaces,
                 Err(err) => {
                     return Err(err);
                 }
             }
         }
-        4 => {
-            match get_floors(args[0], args[2], args[3]) {
+        3 => {
+            match get_floors(args[0], args[1], args[2]) {
                 Ok(floor) => floor.0.contained_spaces,
                 Err(err) => {
                     return Err(err);
                 }
             }
         }
-        5 => {
-            let floor_string = match get_floors(args[0], args[2], args[3]) {
+        4 => {
+            let floor_string = match get_floors(args[0], args[1], args[2]) {
                 Ok(floor) => floor.1,
                 Err(err) => {
                     return Err(err);
                 }
             };
 
-            match get_floor_from_floor(&floor_string, args[4]) {
+            match get_floor_from_floor(&floor_string, args[3]) {
                 Ok(floor) => floor.0.contained_spaces,
                 Err(err) => {
                     return Err(err);
@@ -222,16 +213,23 @@ pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
         }
     };
 
-    let response: String = match search_contained_spaces("ROOM", args[1], &contained_spaces) {
+    let response: String = match search_contained_spaces(name, &contained_spaces) {
         Ok(response) => response,
         Err(err) => {
             return Err(err);
         }
     };
 
-    let room: Room = serde_json::from_str(&response).unwrap();
+    let space: GenericSpace = serde_json::from_str(&response).unwrap();
+    let mut room: Room = Default::default();
 
-    return Ok((room, response));
+    if space.contained_spaces.len() == 0 {
+        // It is a ROOM
+        // OH HAI ROOM
+        room = serde_json::from_str(&response).unwrap();
+    }
+
+    return Ok((room, response, space));
 }
 
 /// Search for a space with a specified type and name
@@ -243,17 +241,22 @@ pub fn get_rooms(args: &Vec<&str>) -> Result<(Room, String), UserError> {
 ///
 /// # Return Value:
 /// String with the GET response or an UserError
-fn search_contained_spaces(type_name: &str,
-                           name: &str,
+fn search_contained_spaces(name: &str,
                            contained_spaces: &Vec<ContainedSpace>)
                            -> Result<String, UserError> {
+    println!("Searching for: {}", name);
     let mut fenix_id: &String = &format!("");
     for i in contained_spaces {
-        if i.type_name == type_name && !i.name.is_empty() &&
-           utils::sanitize_string(&i.name) == name {
+        println!("TEST: {}", i.name);
+        if !i.name.is_empty() && utils::sanitize_string(&i.name) == name {
             fenix_id = &i.id;
             break;
         }
+    }
+
+    if fenix_id.is_empty() {
+        let error = UserError::new(format!("No id found for space {}", name));
+        return Err(error);
     }
 
     let url = &format!("{}/{}", FENIX_BASE_URL, fenix_id);

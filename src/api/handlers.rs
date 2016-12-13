@@ -210,16 +210,13 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
         }
     };
 
+    let mut args: Vec<&str> = vec![my_campus];
+
     // Get Room
     let my_room: &str = match request.view_args.get("room") {
         Some(my_room) => my_room as &str,
-        None => {
-            let error = UserError::new("The room field is empty");
-            return Err(PenUserError(error));
-        }
+        None =>  ""
     };
-
-    let mut args: Vec<&str> = vec![my_campus, my_room];
 
     // Get Building
     //
@@ -262,7 +259,7 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
     // //////////////////////////////////////////
     // Build Response
     // //////////////////////////////////////////
-    let room: String = match getters::get_rooms(&args) {
+    let room: String = match getters::get_rooms(&args, my_room) {
         Ok(room) => room.1,
         Err(err) => {
             return Err(PenUserError(err));
