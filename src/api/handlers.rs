@@ -272,3 +272,29 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
 
     return Ok(response);
 }
+
+/// Handler for IDs using the FenixEDU API
+///
+/// # Return Value
+/// Error if the `get_spaces_from_id()` fails. Otherwise read the contents and
+/// send it as JSON.
+pub fn id_handler(request: &mut Request) -> PencilResult {
+    // Get ID from request
+    let id: &str = match request.view_args.get("id") {
+        Some(id) => id as &str,
+        None =>  ""
+    };
+
+    let contained_spaces: String = match getters::get_spaces_from_id(id) {
+        Ok(spaces) => spaces.1,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    // Build response and set content to JSON
+    let mut response = Response::from(contained_spaces);
+    response.set_content_type("application/json");
+
+    return Ok(response);
+}

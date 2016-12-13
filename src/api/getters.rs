@@ -271,3 +271,27 @@ fn search_contained_spaces(name: &str,
 
     return Ok(response);
 }
+
+/// Get all spaces at from Fenix
+///
+/// Send a GET request with the specified id.
+///
+/// # Output
+/// Result of the transaction with a Space and String tuple and a UserError.
+pub fn get_spaces_from_id(id: &str) -> Result<(Vec<ContainedSpace>, String), UserError> {
+    // Format URL
+    let url = &format!("{}/{}", FENIX_BASE_URL, id);
+
+    // Send GET request to the url
+    let get_response = match utils::get_request(FENIX_BASE_URL) {
+        Ok(res) => res,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(error);
+        }
+    };
+
+    let space: GenericSpace = serde_json::from_str(&get_response).unwrap();
+
+    return Ok((space.contained_spaces, get_response));
+}

@@ -29,24 +29,36 @@ fn main() {
     // REST API
     // The REST API will only return JSON enconded responses.
     // ///////////////////////////////////////////////////////
+    // ID
+    app.get("/api/<id:int>", "id_handler", handlers::id_handler);
 
+    // Spaces
     app.get("/api/spaces", "spaces_handler", handlers::spaces_handler);
+
+    // Campus
     app.get("/api/<campus:string>",
             "campus_handler",
             handlers::campus_handler);
-    app.get("/api/<campus:string>/<building:string>",
+    // Building
+    app.get("/api/<campus:string>/building/<building:string>",
             "building_handler",
             handlers::building_handler);
-    app.get("/api/<campus:string>/<building:string>/<floor:string>",
+    // Floor
+    app.get("/api/<campus:string>/<building:string>/floor/<floor:string>",
             "floor_handler",
             handlers::floor_handler);
-    app.get("/api/<campus:string>/<building:string>/<floor:string>/<room:string>",
+    app.get("/api/<campus:string>/<building:string>/<floor:string>/floor/<floor2:string>",
+            "floor_handler",
+            handlers::floor_handler);
+    // Room
+    app.get("/api/<campus:string>/<building:string>/room/<room:string>",
             "room_handler",
             handlers::room_handler);
-    app.get("/api/<campus:string>/<building:string>/<floor:string>/<floor2:string>",
-            "floor_handler",
-            handlers::floor_handler);
-    app.get("/api/<campus:string>/<building:string>/<floor:string>/<floor2:string>/<room:string>",
+    app.get("/api/<campus:string>/<building:string>/<floor:string>/room/<room:string>",
+            "room_handler",
+            handlers::room_handler);
+    app.get("/api/<campus:string>/<building:string>/<floor:string>/<floor2:string>/room/<room:\
+             string>",
             "room_handler",
             handlers::room_handler);
     // app.post("/api/create_user", "create_user_handler", create_user_handler);
