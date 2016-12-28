@@ -2,8 +2,11 @@
 //!
 //! Each handler reads the request if need be, gets the information from getters
 //! and returns a Response accordingly,
+extern crate serde_json;
+
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
+use super::GenericSpace;
 use super::getters;
 use utils;
 use super::DB_BASE_URL;
@@ -36,7 +39,7 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
     let mut response = Response::from(space);
     response.set_content_type("application/json");
 
-    return Ok(response);
+    Ok(response)
 }
 
 /// Handler for a campus at IST
@@ -70,7 +73,7 @@ pub fn campus_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(campus);
     response.set_content_type("application/json");
 
-    return Ok(response);
+    Ok(response)
 }
 
 /// Handler for a building at IST
@@ -113,7 +116,7 @@ pub fn building_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(building);
     response.set_content_type("application/json");
 
-    return Ok(response);
+    Ok(response)
 }
 
 /// Handler for a floor at IST
@@ -185,7 +188,7 @@ pub fn floor_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(floor);
     response.set_content_type("application/json");
 
-    return Ok(response);
+    Ok(response)
 }
 
 /// Handler for a room at IST
@@ -262,7 +265,7 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
     // Build Response
     // //////////////////////////////////////////
     let room: String = match getters::get_rooms(&args, my_room) {
-        Ok(room) => room.1,
+        Ok(room) => room,
         Err(err) => {
             return Err(PenUserError(err));
         }
@@ -272,10 +275,10 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(room);
     response.set_content_type("application/json");
 
-    return Ok(response);
+    Ok(response)
 }
 
-/// Handler for IDs using the FenixEDU API
+/// Handler for IDs using the `FenixEDU` API
 ///
 /// # Return Value
 /// Error if the `get_spaces_from_id()` fails. Otherwise read the contents and
@@ -287,18 +290,30 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         None => "",
     };
 
-    let contained_spaces: String = match getters::get_spaces_from_id(id) {
-        Ok(spaces) => spaces.1,
+    let generic_space: String = match getters::get_spaces_from_id(id) {
+        Ok(data) => data,
         Err(err) => {
             return Err(PenUserError(err));
         }
     };
 
-    // Build response and set content to JSON
-    let mut response = Response::from(contained_spaces);
-    response.set_content_type("application/json");
+    let space: GenericSpace = serde_json::from_str(&generic_space).unwrap();
 
-    return Ok(response);
+    let mut response: Response;
+    if !space.contained_spaces.is_empty() {
+        let generic_space_contained_spaces_serialized: String =
+            serde_json::to_string(&space.contained_spaces).unwrap();
+
+        // Build response and set content to JSON
+        response = Response::from(generic_space_contained_spaces_serialized);
+        response.set_content_type("application/json");
+    } else {
+        // Build response and set content to JSON
+        response = Response::from(generic_space);
+        response.set_content_type("application/json");
+    }
+
+    Ok(response)
 }
 
 /// Creates a User in the Database
@@ -325,7 +340,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
     println!("Body: {}", body);
 
     let status_code: u16;
-    let mut buffer: String = format!("");
+    let mut buffer: String = "".to_owned();
 
     if username.is_empty() {
         status_code = 204;
@@ -343,7 +358,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(buffer);
     response.status_code = status_code;
 
-    return Ok(response);
+    Ok(response)
 }
 
 /// Creates a Room in the Database
@@ -363,12 +378,12 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
     // essentially wasting memory.
     let id: String = match request.form().get("id") {
         Some(id) => id.clone(),
-        None => format!("")
+        None => "".to_owned(),
     };
 
     let capacity: String = match request.form().get("capacity") {
         Some(capacity) => capacity.clone(),
-        None => format!(""),
+        None => "".to_owned(),
     };
 
     let url: &str = &format!("{}/room", DB_BASE_URL);
@@ -380,7 +395,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
     println!("Body: {}", body);
 
     let status_code: u16;
-    let mut buffer: String = format!("");
+    let mut buffer: String = "".to_owned();
 
     if id.is_empty() || capacity.is_empty() {
         status_code = 204;
@@ -398,5 +413,5 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
     let mut response = Response::from(buffer);
     response.status_code = status_code;
 
-    return Ok(response);
+    Ok(response)
 }

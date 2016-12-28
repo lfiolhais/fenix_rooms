@@ -33,10 +33,10 @@ pub fn get_request(url: &str) -> Result<String, String> {
 
     // Bail quietly when Fenix doesn't return information
     if read_size != 0 {
-        return Ok(buf);
+        Ok(buf)
     } else {
-        let error = format!("FenixEDU did not return any information");
-        return Err(error);
+        let error = "FenixEDU did not return any information".to_owned();
+        Err(error)
     }
 }
 
@@ -69,10 +69,10 @@ pub fn post_request(url: &str, body: &str) -> Result<String, String> {
 
     // Bail quietly when Fenix doesn't return information
     if read_size != 0 {
-        return Ok(buf);
+        Ok(buf)
     } else {
-        let error = format!("FenixEDU did not return any information");
-        return Err(error);
+        let error = "FenixEDU did not return any information".to_owned();
+        Err(error)
     }
 }
 
@@ -86,8 +86,8 @@ pub fn post_request(url: &str, body: &str) -> Result<String, String> {
 ///
 /// # Return Value
 /// Sane String
-pub fn sanitize_string(string: &String) -> String {
-    let result: String = string.to_lowercase()
+pub fn sanitize_string(string: &str) -> String {
+    string.to_lowercase()
         .replace(" ", "-")
         .replace("/", "_")
         .replace("á", "a")
@@ -101,7 +101,5 @@ pub fn sanitize_string(string: &String) -> String {
         .replace("ô", "o")
         .replace("õ", "o")
         .replace("ú", "u")
-        .replace("ç", "c");
-
-    return result;
+        .replace("ç", "c")
 }

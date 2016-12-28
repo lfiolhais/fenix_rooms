@@ -18,7 +18,7 @@ pub struct Room {
     capacity: Capacity,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct GenericSpace {
     #[serde(rename="type")]
     type_name: String,
@@ -38,7 +38,7 @@ struct Capacity {
     normal: u64
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ContainedSpace {
     #[serde(rename="type")]
     type_name: String,
