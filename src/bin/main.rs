@@ -27,7 +27,6 @@ fn main() {
 
     // ///////////////////////////////////////////////////////
     // REST API
-    // The REST API will only return JSON enconded responses.
     // ///////////////////////////////////////////////////////
     // ID
     app.get("/api/<id:int>", "id_handler", handlers::id_handler);
@@ -61,7 +60,8 @@ fn main() {
              string>",
             "room_handler",
             handlers::room_handler);
-    // app.post("/api/create_user", "create_user_handler", create_user_handler);
+
+    app.post("/api/create_user", "create_user_handler", handlers::create_user_handler);
 
     // Run server
     debug!("Running on 127.0.0.1:8080");

@@ -283,7 +283,7 @@ pub fn get_spaces_from_id(id: &str) -> Result<(Vec<ContainedSpace>, String), Use
     let url = &format!("{}/{}", FENIX_BASE_URL, id);
 
     // Send GET request to the url
-    let get_response = match utils::get_request(FENIX_BASE_URL) {
+    let get_response = match utils::get_request(url) {
         Ok(res) => res,
         Err(err) => {
             let error = UserError::new(err);

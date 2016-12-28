@@ -5,6 +5,8 @@
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
 use super::getters;
+use utils;
+use super::DB_BASE_URL;
 
 /// Handler for all spaces at IST
 ///
@@ -215,7 +217,7 @@ pub fn room_handler(request: &mut Request) -> PencilResult {
     // Get Room
     let my_room: &str = match request.view_args.get("room") {
         Some(my_room) => my_room as &str,
-        None =>  ""
+        None => "",
     };
 
     // Get Building
@@ -282,7 +284,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     // Get ID from request
     let id: &str = match request.view_args.get("id") {
         Some(id) => id as &str,
-        None =>  ""
+        None => "",
     };
 
     let contained_spaces: String = match getters::get_spaces_from_id(id) {
@@ -295,6 +297,52 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     // Build response and set content to JSON
     let mut response = Response::from(contained_spaces);
     response.set_content_type("application/json");
+
+    return Ok(response);
+}
+
+/// Creates a User in the Database
+///
+/// Create a user in the database with the specified username in the body. If
+/// multiple usernames are provided only the first will be considered.
+///
+/// # Arguments
+/// * request - The request sent by the client
+///
+/// # Output
+/// A Response with a JSON messsage and correct status code.
+pub fn create_user_handler(request: &mut Request) -> PencilResult {
+    // Get the username from the body of the request if it exists
+    let username: &str = match request.form().get("username") {
+        Some(username) => username,
+        None => "",
+    };
+
+    let url: &str = &format!("{}/users", DB_BASE_URL);
+    let body: &str = &format!("{{\"username\": \"{}\"}}", username);
+
+    println!("URL: {}", url);
+    println!("Body: {}", body);
+    println!("Username: {}", username);
+
+    let status_code: u16;
+    let mut buffer: String = format!("");
+
+    if username.is_empty() {
+        status_code = 204;
+    } else {
+        buffer = match utils::post_request(url, body) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                let error = UserError::new(err);
+                return Err(PenUserError(error));
+            }
+        };
+        status_code = 201;
+    }
+
+    let mut response = Response::from(buffer);
+    response.status_code = status_code;
 
     return Ok(response);
 }

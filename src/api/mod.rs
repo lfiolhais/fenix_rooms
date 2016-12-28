@@ -51,7 +51,7 @@ pub struct ContainedSpace {
 // Constants
 // ///////////////////////////////////////////////////////////
 const FENIX_BASE_URL: &'static str = "https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces";
-const DB_BASE_URL: &'static str = "https://asint-final-project.appspot.com";
+const DB_BASE_URL: &'static str = "http://0.0.0.0:32769"; //"https://asint-final-project.appspot.com";
 
 // ///////////////////////////////////////////////////////////
 // Modules
