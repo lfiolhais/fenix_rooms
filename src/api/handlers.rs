@@ -323,12 +323,66 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 
     println!("URL: {}", url);
     println!("Body: {}", body);
-    println!("Username: {}", username);
 
     let status_code: u16;
     let mut buffer: String = format!("");
 
     if username.is_empty() {
+        status_code = 204;
+    } else {
+        buffer = match utils::post_request(url, body) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                let error = UserError::new(err);
+                return Err(PenUserError(error));
+            }
+        };
+        status_code = 201;
+    }
+
+    let mut response = Response::from(buffer);
+    response.status_code = status_code;
+
+    return Ok(response);
+}
+
+/// Creates a Room in the Database
+///
+/// Create a room in the database with the specified id and capacity in the
+/// body.
+///
+/// # Arguments
+/// * request - The request sent by the client
+///
+/// # Output
+/// A Response with a JSON messsage and correct status code.
+pub fn create_room_handler(request: &mut Request) -> PencilResult {
+    // Get the id and capacity from the body of the request if they exists. I
+    // need to clone the parameter because Pencil returns a reference to the
+    // Struct and doesn't allow me consume the contents of the form. We are
+    // essentially wasting memory.
+    let id: String = match request.form().get("id") {
+        Some(id) => id.clone(),
+        None => format!("")
+    };
+
+    let capacity: String = match request.form().get("capacity") {
+        Some(capacity) => capacity.clone(),
+        None => format!(""),
+    };
+
+    let url: &str = &format!("{}/room", DB_BASE_URL);
+    let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": \"{}\"}}",
+                              id,
+                              capacity);
+
+    println!("URL: {}", url);
+    println!("Body: {}", body);
+
+    let status_code: u16;
+    let mut buffer: String = format!("");
+
+    if id.is_empty() || capacity.is_empty() {
         status_code = 204;
     } else {
         buffer = match utils::post_request(url, body) {

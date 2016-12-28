@@ -62,6 +62,7 @@ fn main() {
             handlers::room_handler);
 
     app.post("/api/create_user", "create_user_handler", handlers::create_user_handler);
+    app.post("/api/create_room", "create_room_handler", handlers::create_room_handler);
 
     // Run server
     debug!("Running on 127.0.0.1:8080");

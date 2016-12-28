@@ -35,8 +35,7 @@ type Space = Vec<ContainedSpace>;
 // ///////////////////////////////////////////////////////////
 #[derive(Deserialize, Default)]
 struct Capacity {
-    normal: u64,
-    exam: u64,
+    normal: u64
 }
 
 #[derive(Deserialize)]
