@@ -9,6 +9,11 @@ extern crate pencil;
 
 use fenix_rooms::api::handlers;
 use pencil::Pencil;
+use std::env;
+
+fn get_server_port() -> u16 {
+    env::var("PORT").unwrap_or("8080".to_string()).parse().unwrap()
+}
 
 fn main() {
     let mut app = Pencil::new("~/fenix-rooms/src");
@@ -73,6 +78,7 @@ fn main() {
              handlers::check_out_handler);
 
     // Run server
-    debug!("Running on 127.0.0.1:8080");
-    app.run("127.0.0.1:8080");
+    let ip = format!("127.0.0.1:{}", get_server_port());
+    debug!("Running on {}", ip);
+    app.run(ip.as_str());
 }
