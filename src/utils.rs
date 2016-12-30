@@ -8,15 +8,13 @@ use self::hyper::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 
 /// Perform a GET request to the specified url
 ///
-/// Build a GET request and query. Quietly bail if we fail to read the response
-/// body. If the message read more than 0 bytes we can proceed to processing the
-/// information. Otherwise bail quietly.
+/// Build a GET request and query. Quietly bail if the request fails.
 ///
 /// # Arguments
-/// * url => Specified URL to perform the GET request to.
+/// * `url` => Specified URL to perform the GET request to.
 ///
 /// # Return Value
-/// The error message of the problem or the contents of the body.
+/// The response or the error message.
 pub fn get_request(url: &str) -> Result<Response, String> {
     // Create Hyper client to perform REST calls
     let client = Client::new();
@@ -30,14 +28,14 @@ pub fn get_request(url: &str) -> Result<Response, String> {
 
 /// Perform a POST request to the specified url
 ///
-/// TODO
+/// Build a POST request and query. Quietly bail if the request fails.
 ///
 /// # Arguments
-/// * url => Specified URL to perform the GET request to.
-/// * body => Content to send
+/// * `url` => Specified URL to perform the GET request to.
+/// * `body` => Content to send
 ///
 /// # Return Value
-/// The error message of the problem or the contents of the body.
+/// The response or the error message.
 pub fn post_request(url: &str, body: &str) -> Result<Response, String> {
     // Create Hyper client to perform REST calls
     let client = Client::new();
@@ -58,11 +56,11 @@ pub fn post_request(url: &str, body: &str) -> Result<Response, String> {
 
 /// Perform a DELETE request to the specified url
 ///
-/// TODO
+/// Build a DELETE request and query. Quietly bail if the request fails.
 ///
 /// # Arguments
-/// * url => Specified URL to perform the GET request to.
-/// * body => Content to send
+/// * `url` => Specified URL to perform the GET request to.
+/// * `body` => Content to send
 ///
 /// # Return Value
 /// The error message of the problem or the contents of the body.
