@@ -9,8 +9,6 @@ extern crate pencil;
 // ///////////////////////////////////////////////////////////
 #[derive(Deserialize, Default)]
 pub struct Room {
-    #[serde(rename="type")]
-    type_name: String,
     id: String,
     name: String,
     #[serde(rename="containedSpaces")]
@@ -50,7 +48,7 @@ pub struct ContainedSpace {
 // Constants
 // ///////////////////////////////////////////////////////////
 const FENIX_BASE_URL: &'static str = "https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces";
-const DB_BASE_URL: &'static str = "http://0.0.0.0:32769"; //"https://asint-final-project.appspot.com";
+const DB_BASE_URL: &'static str = "https://asint-project.herokuapp.com";
 
 // ///////////////////////////////////////////////////////////
 // Modules

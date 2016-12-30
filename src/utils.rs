@@ -1,7 +1,10 @@
 extern crate hyper;
 
 use std::io::Read;
-use self::hyper::client::Client;
+use self::hyper::status::StatusCode;
+use self::hyper::client::{Client, Response};
+use self::hyper::header::{Headers, ContentType};
+use self::hyper::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 
 /// Perform a GET request to the specified url
 ///
@@ -14,29 +17,14 @@ use self::hyper::client::Client;
 ///
 /// # Return Value
 /// The error message of the problem or the contents of the body.
-pub fn get_request(url: &str) -> Result<String, String> {
+pub fn get_request(url: &str) -> Result<Response, String> {
     // Create Hyper client to perform REST calls
     let client = Client::new();
 
     // Create and send GET request
-    let mut res = client.get(url).send().unwrap();
-
-    // Read content from response and write it to a buffer
-    let mut buf: String = String::new();
-    let read_size = match res.read_to_string(&mut buf) {
-        Ok(size) => size,
-        Err(err) => {
-            let error = format!("Problem while reading message body: {}", err);
-            return Err(error);
-        }
-    };
-
-    // Bail quietly when Fenix doesn't return information
-    if read_size != 0 {
-        Ok(buf)
-    } else {
-        let error = "FenixEDU did not return any information".to_owned();
-        Err(error)
+    match client.get(url).send() {
+        Ok(res) => Ok(res),
+        Err(err) => Err(format!("The GET request failed with: {}", err)),
     }
 }
 
@@ -50,29 +38,82 @@ pub fn get_request(url: &str) -> Result<String, String> {
 ///
 /// # Return Value
 /// The error message of the problem or the contents of the body.
-pub fn post_request(url: &str, body: &str) -> Result<String, String> {
+pub fn post_request(url: &str, body: &str) -> Result<Response, String> {
     // Create Hyper client to perform REST calls
     let client = Client::new();
 
-    // Create and send GET request
-    let mut res = client.post(url).body(body).send().unwrap();
+    // Add a JSON header
+    let mut headers = Headers::new();
+    headers.set(ContentType(Mime(TopLevel::Application,
+                                 SubLevel::Json,
+                                 vec![(Attr::Charset, Value::Utf8)])));
 
-    // Read content from response and write it to a buffer
-    let mut buf: String = String::new();
-    let read_size = match res.read_to_string(&mut buf) {
-        Ok(size) => size,
-        Err(err) => {
-            let error = format!("Problem while reading message body: {}", err);
-            return Err(error);
+    // Create and send POST request
+    match client.post(url).headers(headers).body(body).send() {
+        Ok(res) => Ok(res),
+        Err(err) => Err(format!("The POST request failed with: {}", err)),
+    }
+
+}
+
+/// Perform a DELETE request to the specified url
+///
+/// TODO
+///
+/// # Arguments
+/// * url => Specified URL to perform the GET request to.
+/// * body => Content to send
+///
+/// # Return Value
+/// The error message of the problem or the contents of the body.
+pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
+    // Create Hyper client to perform REST calls
+    let client = Client::new();
+
+    // Add a JSON header
+    let mut headers = Headers::new();
+    headers.set(ContentType(Mime(TopLevel::Application,
+                                 SubLevel::Json,
+                                 vec![(Attr::Charset, Value::Utf8)])));
+
+    // Create and send POST request
+    match client.delete(url).headers(headers).body(body).send() {
+        Ok(res) => Ok(res),
+        Err(err) => Err(format!("The DELETE request failed with: {}", err)),
+    }
+}
+
+/// Reads the body of the response request and returns it
+///
+/// This might be the dumbest code...
+///
+/// # Arguments
+/// * string => String to convert to sane characters.
+///
+/// # Return Value
+/// Sane String
+pub fn read_response_body(response: &mut Response) -> Result<String, String> {
+    if response.status == StatusCode::Ok || response.status == StatusCode::Created {
+        // Read content from response and write it to a buffer
+        let mut buf: String = String::new();
+        let read_size = match response.read_to_string(&mut buf) {
+            Ok(size) => size,
+            Err(err) => {
+                let error = format!("Problem while reading message body: {}", err);
+                return Err(error);
+            }
+        };
+
+        if read_size != 0 {
+            Ok(buf)
+        } else {
+            let error = format!("{{ \"error\": \"{} did not return any information\" }}", response.url);
+            Ok(error)
         }
-    };
-
-    // Bail quietly when Fenix doesn't return information
-    if read_size != 0 {
-        Ok(buf)
     } else {
-        let error = "FenixEDU did not return any information".to_owned();
-        Err(error)
+        Ok(format!("{{ \"error\": \"The server in {} returned {}\" }}",
+                   response.url,
+                   response.status))
     }
 }
 
