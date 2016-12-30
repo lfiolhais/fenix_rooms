@@ -79,7 +79,13 @@ fn main() {
              handlers::check_out_handler);
 
     // Run server
-    let ip = format!("0.0.0.0:{}", get_server_port());
+    let listen_addr = if env::var("DYNO").is_ok() {
+        "0.0.0.0"
+    } else {
+        "127.0.0.1"
+    };
+
+    let ip = format!("{}:{}", listen_addr, get_server_port());
     debug!("Running on {}", ip);
     app.run(ip.as_str());
 }
