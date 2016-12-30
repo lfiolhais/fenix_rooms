@@ -8,6 +8,7 @@ use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
 use super::GenericSpace;
 use super::getters;
+use super::Room;
 use utils;
 use super::DB_BASE_URL;
 
@@ -72,8 +73,11 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         response = Response::from(generic_space_contained_spaces_serialized);
         response.set_content_type("application/json");
     } else {
+        let room: Room = serde_json::from_str(&generic_space).unwrap();
+        let room_json: String = serde_json::to_string(&room).unwrap();
+
         // Build response and set content to JSON
-        response = Response::from(generic_space);
+        response = Response::from(room_json);
         response.set_content_type("application/json");
     }
 

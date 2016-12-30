@@ -2,7 +2,6 @@
 extern crate serde_json;
 
 use super::pencil::UserError;
-use super::{Space, Room, GenericSpace, ContainedSpace};
 use super::FENIX_BASE_URL;
 use utils;
 

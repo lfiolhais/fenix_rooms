@@ -4,36 +4,22 @@
 //! information received is parsed and proecessed.
 extern crate pencil;
 
+use std::collections::HashMap;
+
 // ///////////////////////////////////////////////////////////
 // Basic Structs
 // ///////////////////////////////////////////////////////////
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct Room {
-    id: String,
     name: String,
-    #[serde(rename="containedSpaces")]
-    contained_spaces: Vec<ContainedSpace>,
-    capacity: Capacity,
+    capacity: HashMap<String, u64>,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct GenericSpace {
-    #[serde(rename="type")]
-    type_name: String,
-    id: String,
     name: String,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
-}
-
-type Space = Vec<ContainedSpace>;
-
-// ///////////////////////////////////////////////////////////
-// Helper Structs
-// ///////////////////////////////////////////////////////////
-#[derive(Deserialize, Default)]
-struct Capacity {
-    normal: u64
 }
 
 #[derive(Deserialize, Serialize)]
