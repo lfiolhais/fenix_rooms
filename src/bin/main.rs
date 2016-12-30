@@ -79,7 +79,7 @@ fn main() {
              handlers::check_out_handler);
 
     // Run server
-    let ip = format!("127.0.0.1:{}", get_server_port());
+    let ip = format!("0.0.0.0:{}", get_server_port());
     debug!("Running on {}", ip);
     app.run(ip.as_str());
 }
