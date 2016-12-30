@@ -86,11 +86,11 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
 
 /// Creates a User in the Database
 ///
-/// Create a user in the database with the specified username in the body. If
+/// Create a user in the database with the specified `username` in the body. If
 /// multiple usernames are provided only the first will be considered.
 ///
 /// # Arguments
-/// * request - The request sent by the client
+/// * `request` - The request sent by the client
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
@@ -137,11 +137,12 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 
 /// Creates a Room in the Database
 ///
-/// Create a room in the database with the specified id, capacity, location and
-/// admin_id in the body. Only the admin can create rooms in the DB.
+/// Create a room in the database with the specified `id`, `capacity`,
+/// `location` and `admin_id` in the body. Only the admin can create rooms in
+/// the DB.
 ///
 /// # Arguments
-/// * request - The request sent by the client
+/// * `request` - The request sent by the client
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
@@ -215,11 +216,11 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
 
 /// Checks in in the Database
 ///
-/// The check in is performed with a room id and a user id. Then, a POST request
-/// is sent and its content read and sent to the client.
+/// The check in is performed with a `room_id` and a `user_id`. Then, a POST
+/// request is sent and its content read and sent to the client.
 ///
 /// # Arguments
-/// * request - The request sent by the client
+/// * `request` - The request sent by the client
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
@@ -270,11 +271,11 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
 
 /// Checks out in the Database
 ///
-/// The check out is performed with a room id and a user id. Then, a POST request
-/// is sent and its content read and sent to the client.
+/// The check out is performed with a `room_id` and a `user_id`. Then, a POST
+/// request is sent and its content read and sent to the client.
 ///
 /// # Arguments
-/// * request - The request sent by the client
+/// * `request` - The request sent by the client
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
