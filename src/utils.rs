@@ -85,13 +85,14 @@ pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
 
 /// Reads the body of the response request and returns it
 ///
-/// This might be the dumbest code...
+/// The response body is read when the request has a 200 OK or 201 Created
+/// status code.
 ///
 /// # Arguments
-/// * string => String to convert to sane characters.
+/// * `response` => The response received from the request performed.
 ///
 /// # Return Value
-/// Sane String
+/// The contents of the body or a error message.
 pub fn read_response_body(response: &mut Response) -> Result<String, String> {
     if response.status == StatusCode::Ok || response.status == StatusCode::Created {
         // Read content from response and write it to a buffer

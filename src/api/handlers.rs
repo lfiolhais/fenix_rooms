@@ -370,8 +370,8 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 
 /// Creates a Room in the Database
 ///
-/// Create a room in the database with the specified id and capacity in the
-/// body.
+/// Create a room in the database with the specified id, capacity, location and
+/// admin_id in the body. Only the admin can create rooms in the DB.
 ///
 /// # Arguments
 /// * request - The request sent by the client
@@ -449,7 +449,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
 
 /// Checks in in the Database
 ///
-/// TODO
+/// The check in is performed with a room id and a user id. Then, a POST request
+/// is sent and its content read and sent to the client.
 ///
 /// # Arguments
 /// * request - The request sent by the client
@@ -504,7 +505,8 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
 
 /// Checks out in the Database
 ///
-/// TODO
+/// The check out is performed with a room id and a user id. Then, a POST request
+/// is sent and its content read and sent to the client.
 ///
 /// # Arguments
 /// * request - The request sent by the client
