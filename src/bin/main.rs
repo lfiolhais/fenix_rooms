@@ -12,7 +12,8 @@ use pencil::Pencil;
 use std::env;
 
 fn get_server_port() -> u16 {
-    env::var("PORT").unwrap_or("8080".to_string()).parse().unwrap()
+    let port_str = env::var("PORT").unwrap_or(String::new());
+    port_str.parse().unwrap_or(8080)
 }
 
 fn main() {
