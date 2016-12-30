@@ -24,7 +24,7 @@ fn main() {
     // GET
     // /////
     // ID
-    app.get("/api/<id:int>", "id_handler", handlers::id_handler);
+    app.get("/api/id/<id:int>", "id_handler", handlers::id_handler);
 
     // Spaces
     app.get("/api/spaces", "spaces_handler", handlers::spaces_handler);

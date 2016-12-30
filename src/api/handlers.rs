@@ -42,242 +42,6 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
     Ok(response)
 }
 
-// /// Handler for a campus at IST
-// ///
-// /// The handler calls `get_campi(campus)` to perform the GET request required
-// /// and search the contents for a match. If the request was successful its
-// /// contents will be sent as JSON. Otherwise an error will be sent, provided by
-// /// the function.
-// ///
-// /// # Return Value
-// /// Error if somehow the campus field is empty and the getter
-// /// errors. Otherwise JSON contents are sent.
-// pub fn campus_handler(request: &mut Request) -> PencilResult {
-//     // Get Campus
-//     let my_campus: &str = match request.view_args.get("campus") {
-//         Some(my_campus) => my_campus as &str,
-//         None => {
-//             let error = UserError::new("The campus field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     let campus: String = match getters::get_campi(my_campus) {
-//         Ok(campus) => campus.1,
-//         Err(err) => {
-//             return Err(PenUserError(err));
-//         }
-//     };
-
-//     // Build response and set content to JSON
-//     let mut response = Response::from(campus);
-//     response.set_content_type("application/json");
-
-//     Ok(response)
-// }
-
-// /// Handler for a building at IST
-// ///
-// /// The handler calls `get_building(building, campus)` to perform the GET
-// /// request required and search the contents for a match. If the request was
-// /// successful its contents will be sent as JSON. Otherwise an error will be
-// /// sent, provided by the function.
-// ///
-// /// # Return Value
-// /// Error if somehow the campus field is empty and the getter
-// /// errors. Otherwise JSON contents are sent.
-// pub fn building_handler(request: &mut Request) -> PencilResult {
-//     // Get Campus
-//     let my_campus: &str = match request.view_args.get("campus") {
-//         Some(my_campus) => my_campus as &str,
-//         None => {
-//             let error = UserError::new("The campus field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     // Get Building
-//     let my_building: &str = match request.view_args.get("building") {
-//         Some(my_building) => my_building as &str,
-//         None => {
-//             let error = UserError::new("The building field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     let building: String = match getters::get_buildings(my_campus, my_building) {
-//         Ok(building) => building.1,
-//         Err(err) => {
-//             return Err(PenUserError(err));
-//         }
-//     };
-
-//     // Build response and set content to JSON
-//     let mut response = Response::from(building);
-//     response.set_content_type("application/json");
-
-//     Ok(response)
-// }
-
-// /// Handler for a floor at IST
-// ///
-// /// The handler calls `get_floors(building, campus, floors)` to perform the GET
-// /// request required and search the contents for a match. If the request was
-// /// successful its contents will be sent as JSON. Otherwise an error will be
-// /// sent, provided by the function. There may be a case where there are floors
-// /// within floors. When that variable is set an extra GET request is performed
-// /// by calling `get_floor_from_floor(&floor, name_of_floor)`.
-// ///
-// /// # Return Value
-// /// Error if somehow the campus field is empty and the getter
-// /// errors. Otherwise JSON contents are sent.
-// pub fn floor_handler(request: &mut Request) -> PencilResult {
-//     // Get Campus
-//     let my_campus: &str = match request.view_args.get("campus") {
-//         Some(my_campus) => my_campus as &str,
-//         None => {
-//             let error = UserError::new("The campus field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     // Get Building
-//     let my_building: &str = match request.view_args.get("building") {
-//         Some(my_building) => my_building as &str,
-//         None => {
-//             let error = UserError::new("The building field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     // Get Floor
-//     let my_floor: &str = match request.view_args.get("floor") {
-//         Some(my_floor) => my_floor as &str,
-//         None => {
-//             let error = UserError::new("The floor field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     // Get Floor2
-//     //
-//     // Return an impossible value to get from the args. The regex matching will
-//     // only return digits not strings so we are safe!
-//     let my_floor2: &str = match request.view_args.get("floor2") {
-//         Some(my_floor2) => my_floor2 as &str,
-//         None => "",
-//     };
-
-//     let mut floor: String = match getters::get_floors(my_campus, my_building, my_floor) {
-//         Ok(floor) => floor.1,
-//         Err(err) => {
-//             return Err(PenUserError(err));
-//         }
-//     };
-
-//     if !my_floor2.is_empty() {
-//         floor = match getters::get_floor_from_floor(&floor, my_floor2) {
-//             Ok(floor) => floor.1,
-//             Err(err) => {
-//                 return Err(PenUserError(err));
-//             }
-//         };
-//     }
-
-//     // Build response and set content to JSON
-//     let mut response = Response::from(floor);
-//     response.set_content_type("application/json");
-
-//     Ok(response)
-// }
-
-// /// Handler for a room at IST
-// ///
-// /// The handler calls `get_room(&args)` to perform the GET request required and
-// /// search the contents for a match. If the request was successful its contents
-// /// will be sent as JSON. Otherwise an error will be sent, provided by the
-// /// function:.
-// ///
-// /// # Return Value
-// /// Error if somehow the campus field is empty and the getter
-// /// errors. Otherwise JSON contents are sent.
-// pub fn room_handler(request: &mut Request) -> PencilResult {
-//     // //////////////////////////////////////////
-//     // Get Arguments
-//     // //////////////////////////////////////////
-
-//     // Get Campus
-//     let my_campus: &str = match request.view_args.get("campus") {
-//         Some(my_campus) => my_campus as &str,
-//         None => {
-//             let error = UserError::new("The campus field is empty");
-//             return Err(PenUserError(error));
-//         }
-//     };
-
-//     let mut args: Vec<&str> = vec![my_campus];
-
-//     // Get Room
-//     let my_room: &str = match request.view_args.get("room") {
-//         Some(my_room) => my_room as &str,
-//         None => "",
-//     };
-
-//     // Get Building
-//     //
-//     // Return an empty string when the arg is empty
-//     let my_building: &str = match request.view_args.get("building") {
-//         Some(my_building) => my_building as &str,
-//         None => "",
-//     };
-
-//     if !my_building.is_empty() {
-//         args.push(my_building as &str);
-//     }
-
-//     // Get Floor
-//     //
-//     // Return an impossible value to get from the args. The regex matching will
-//     // only return digits not strings so we are safe!
-//     let my_floor: &str = match request.view_args.get("floor") {
-//         Some(my_floor) => my_floor as &str,
-//         None => "",
-//     };
-
-//     if !my_floor.is_empty() {
-//         args.push(my_floor as &str);
-//     }
-
-//     // Get Floor2
-//     //
-//     // Return an impossible value to get from the args. The regex matching will
-//     // only return digits not strings so we are safe!
-//     let my_floor2: &str = match request.view_args.get("floor2") {
-//         Some(my_floor2) => my_floor2 as &str,
-//         None => "",
-//     };
-
-//     if !my_floor2.is_empty() {
-//         args.push(my_floor2 as &str);
-//     }
-
-//     // //////////////////////////////////////////
-//     // Build Response
-//     // //////////////////////////////////////////
-//     let room: String = match getters::get_rooms(&args, my_room) {
-//         Ok(room) => room,
-//         Err(err) => {
-//             return Err(PenUserError(err));
-//         }
-//     };
-
-//     // Build response and set content to JSON
-//     let mut response = Response::from(room);
-//     response.set_content_type("application/json");
-
-//     Ok(response)
-// }
-
 /// Handler for IDs using the `FenixEDU` API
 ///
 /// # Return Value
@@ -342,7 +106,6 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/users", DB_BASE_URL);
         let body: &str = &format!("{{\"username\": \"{}\"}}", username);
 
-        println!("URL: {}", url);
         println!("Body: {}", body);
 
         let mut response = match utils::post_request(url, body) {
@@ -414,9 +177,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": {}}}",
                                       location,
                                       capacity,
-                                      id);
+                                      fenix_id);
 
-            println!("URL: {}", url);
             println!("Body: {}", body);
 
             let mut response = match utils::post_request(url, body) {
@@ -477,7 +239,6 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        println!("URL: {}", url);
         println!("Body: {}", body);
 
         let mut response = match utils::post_request(url, body) {
@@ -533,7 +294,6 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        println!("URL: {}", url);
         println!("Body: {}", body);
 
         let mut response = match utils::post_request(url, body) {

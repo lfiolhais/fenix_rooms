@@ -38,8 +38,6 @@ struct Capacity {
 
 #[derive(Deserialize, Serialize)]
 pub struct ContainedSpace {
-    #[serde(rename="type")]
-    type_name: String,
     id: String,
     name: String,
 }
