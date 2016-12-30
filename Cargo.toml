@@ -24,3 +24,8 @@ serde = "0.8.19"
 [dependencies.pencil]
 git = "https://github.com/lfiolhais/pencil"
 branch = "feature/neg-num"
+
+[package.metadata.release]
+sign-commit = true
+upload-doc = true
+pre-release-commit-message = "Release {{version}}"

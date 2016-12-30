@@ -301,7 +301,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
 
         println!("Body: {}", body);
 
-        let mut response = match utils::post_request(url, body) {
+        let mut response = match utils::delete_request(url, body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
