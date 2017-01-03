@@ -14,9 +14,9 @@ use super::DB_BASE_URL;
 
 /// Handler for all spaces at IST
 ///
-/// The handler calls `get_spaces()` to perform the GET request required. If the
-/// request was successful its contents will be sent as JSON. Otherwise an error
-/// will be sent, provided by the function.
+/// The handler calls `utils::get_spaces_from_id()` to perform the GET request
+/// required. If the request was successful its contents will be sent as JSON.
+/// Otherwise an error will be sent, provided by the function.
 ///
 /// # Arguments
 /// * _ => The Pencil framework requires the handler signature to be
@@ -25,8 +25,8 @@ use super::DB_BASE_URL;
 ///        declare as unused with `_`.
 ///
 /// # Return Value
-/// Error if the `get_campi()` fails. Otherwise read the contents and send it as
-/// JSON.
+/// Error if the `utils::get_spaces_from_id()` fails. Otherwise
+/// read the contents and send it as JSON.
 pub fn spaces_handler(_: &mut Request) -> PencilResult {
     // Get all spaces from Fenix
     let space: String = match getters::get_spaces_from_id("") {
