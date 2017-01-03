@@ -139,10 +139,10 @@ pub fn from_json_to_obj<T>(json: &str) -> Result<T, String>
 /// Serialize an Object of type T
 ///
 /// # Arguments
-/// * `obj` => The JSON string to convert to an object.
+/// * `obj` => The object to convert to a JSON string.
 ///
 /// # Return Value
-/// The object or an error message.
+/// The string or an error message.
 pub fn from_obj_to_json<T>(obj: &T) -> Result<String, String>
     where T: Serialize
 {
