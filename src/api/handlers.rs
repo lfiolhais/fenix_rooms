@@ -2,11 +2,11 @@
 //!
 //! Each handler reads the request if need be, gets the information from getters
 //! and returns a Response accordingly,
+use super::hyper::status::StatusCode;
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
-use super::GenericSpace;
+use super::{GenericSpace, Room};
 use super::getters;
-use super::Room;
 use utils;
 use super::DB_BASE_URL;
 
@@ -137,7 +137,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response) {
+        buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
             Ok(buffer) => buffer,
             Err(err) => {
                 return Err(PenUserError(UserError::new(err)));
@@ -212,7 +212,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                     return Err(PenUserError(error));
                 }
             };
-            buffer = match utils::read_response_body(&mut response) {
+            buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
                 Ok(buffer) => buffer,
                 Err(err) => {
                     return Err(PenUserError(UserError::new(err)));
@@ -272,7 +272,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response) {
+        buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
             Ok(buffer) => buffer,
             Err(err) => {
                 return Err(PenUserError(UserError::new(err)));
@@ -327,13 +327,13 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response) {
+        buffer = match utils::read_response_body(&mut response, StatusCode::NoContent) {
             Ok(buffer) => buffer,
             Err(err) => {
                 return Err(PenUserError(UserError::new(err)));
             }
         };
-        status_code = 201;
+        status_code = 200;
     }
 
     let mut response = Response::from(buffer);

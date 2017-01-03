@@ -1,3 +1,4 @@
+//! Utilities needed for a client.
 extern crate hyper;
 extern crate serde_json;
 extern crate serde;
@@ -86,16 +87,16 @@ pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
 
 /// Reads the body of the response request and returns it
 ///
-/// The response body is read when the request has a 200 OK or 201 Created
-/// status code.
+/// The response body is read when the request has the specified status code.
 ///
 /// # Arguments
 /// * `response` => The response received from the request performed.
+/// * `status` => The expected StatusCode.
 ///
 /// # Return Value
 /// The contents of the body or a error message.
-pub fn read_response_body(response: &mut Response) -> Result<String, String> {
-    if response.status == StatusCode::Ok || response.status == StatusCode::Created {
+pub fn read_response_body(response: &mut Response, status: StatusCode) -> Result<String, String> {
+    if response.status == status {
         // Read content from response and write it to a buffer
         let mut buf: String = String::new();
         let read_size = match response.read_to_string(&mut buf) {

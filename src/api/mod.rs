@@ -3,6 +3,7 @@
 //! The API has five handlers depending on the request. In `getters.rs` the
 //! information received is parsed and proecessed.
 extern crate pencil;
+extern crate hyper;
 
 use std::collections::HashMap;
 

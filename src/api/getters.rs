@@ -1,6 +1,5 @@
 //! Getters from the requests performed at Fenix
-extern crate serde_json;
-
+use super::hyper::status::StatusCode;
 use super::pencil::UserError;
 use super::FENIX_BASE_URL;
 use utils;
@@ -64,11 +63,9 @@ pub fn get_spaces_from_id(id: &str) -> Result<String, UserError> {
         }
     };
 
-    match utils::read_response_body(&mut get_response) {
+    match utils::read_response_body(&mut get_response, StatusCode::Ok) {
         Ok(buf) => Ok(buf),
-        Err(err) => {
-            Err(UserError::new(err))
-        }
+        Err(err) => Err(UserError::new(err)),
     }
 
 }
