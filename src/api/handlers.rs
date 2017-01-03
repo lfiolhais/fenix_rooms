@@ -185,14 +185,14 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
     };
 
     let admin_id: String = match request.form().get("admin_id") {
-        Some(admin_id) => admin_id.to_owned(),
+        Some(admin_id) => admin_id.clone(),
         None => "".to_owned(),
     };
 
     let status_code: u16;
-    let mut buffer: String = "".to_owned();
 
     if admin_id == "0" {
+        let mut buffer: String = "".to_owned();
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
             status_code = 204;
         } else {
@@ -212,6 +212,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                     return Err(PenUserError(error));
                 }
             };
+
             buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
                 Ok(buffer) => buffer,
                 Err(err) => {
