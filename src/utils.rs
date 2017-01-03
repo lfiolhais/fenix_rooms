@@ -1,6 +1,9 @@
 extern crate hyper;
+extern crate serde_json;
+extern crate serde;
 
 use std::io::Read;
+use self::serde::{Serialize, Deserialize};
 use self::hyper::status::StatusCode;
 use self::hyper::client::{Client, Response};
 use self::hyper::header::{Headers, ContentType};
@@ -106,7 +109,8 @@ pub fn read_response_body(response: &mut Response) -> Result<String, String> {
         if read_size != 0 {
             Ok(buf)
         } else {
-            let error = format!("{{ \"error\": \"{} did not return any information\" }}", response.url);
+            let error = format!("{{ \"error\": \"{} did not return any information\" }}",
+                                response.url);
             Ok(error)
         }
     } else {
@@ -116,13 +120,45 @@ pub fn read_response_body(response: &mut Response) -> Result<String, String> {
     }
 }
 
+/// Deserialize an Object of type T
+///
+/// # Arguments
+/// * `json` => The JSON string to convert to an object.
+///
+/// # Return Value
+/// The object or an error message.
+pub fn from_json_to_obj<T>(json: &str) -> Result<T, String>
+    where T: Deserialize
+{
+    match serde_json::from_str(&json) {
+        Ok(obj) => Ok(obj),
+        Err(err) => Err(format!("JSON encoder error: {}", err)),
+    }
+}
+
+/// Serialize an Object of type T
+///
+/// # Arguments
+/// * `obj` => The JSON string to convert to an object.
+///
+/// # Return Value
+/// The object or an error message.
+pub fn from_obj_to_json<T>(obj: &T) -> Result<String, String>
+    where T: Serialize
+{
+    match serde_json::to_string(&obj) {
+        Ok(obj) => Ok(obj),
+        Err(err) => Err(format!("JSON encoder error: {}", err)),
+    }
+}
+
 /// Remove all accents and other non-pleasant characters from a Portuguese
 /// string
 ///
 /// This might be the dumbest code...
 ///
 /// # Arguments
-/// * string => String to convert to sane characters.
+/// * `string` => String to convert to sane characters.
 ///
 /// # Return Value
 /// Sane String

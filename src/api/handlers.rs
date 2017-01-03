@@ -2,8 +2,6 @@
 //!
 //! Each handler reads the request if need be, gets the information from getters
 //! and returns a Response accordingly,
-extern crate serde_json;
-
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
 use super::GenericSpace;
@@ -62,19 +60,39 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         }
     };
 
-    let space: GenericSpace = serde_json::from_str(&generic_space).unwrap();
+    let space: GenericSpace = match utils::from_json_to_obj(&generic_space) {
+        Ok(space) => space,
+        Err(err) => {
+            return Err(PenUserError(UserError::new(err)));
+        }
+    };
 
     let mut response: Response;
     if !space.contained_spaces.is_empty() {
         let generic_space_contained_spaces_serialized: String =
-            serde_json::to_string(&space.contained_spaces).unwrap();
+            match utils::from_obj_to_json(&space.contained_spaces) {
+                Ok(json) => json,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
 
         // Build response and set content to JSON
         response = Response::from(generic_space_contained_spaces_serialized);
         response.set_content_type("application/json");
     } else {
-        let room: Room = serde_json::from_str(&generic_space).unwrap();
-        let room_json: String = serde_json::to_string(&room).unwrap();
+        let room: Room = match utils::from_json_to_obj(&generic_space) {
+            Ok(room) => room,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+        let room_json: String = match utils::from_obj_to_json(&room) {
+            Ok(json) => json,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
 
         // Build response and set content to JSON
         response = Response::from(room_json);
@@ -179,7 +197,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             status_code = 204;
         } else {
             let url: &str = &format!("{}/rooms", DB_BASE_URL);
-            let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": {}}}",
+            let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
+                                       {}}}",
                                       location,
                                       capacity,
                                       fenix_id);
