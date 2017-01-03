@@ -120,10 +120,11 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
     };
 
     let status_code: u16;
-    let mut buffer: String = "".to_owned();
+    let buffer: String;
 
     if username.is_empty() {
         status_code = 204;
+        buffer = "One of the necessary arguments wasn't provided".to_owned();
     } else {
         let url: &str = &format!("{}/users", DB_BASE_URL);
         let body: &str = &format!("{{\"username\": \"{}\"}}", username);
@@ -191,9 +192,11 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
 
     if admin_id == "0" {
         let status_code: u16;
-        let mut buffer: String = "".to_owned();
+        let buffer: String;
+
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
             status_code = 204;
+            buffer = "One of the necessary arguments wasn't provided".to_owned();
         } else {
             let url: &str = &format!("{}/rooms", DB_BASE_URL);
             let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
@@ -255,10 +258,11 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
     };
 
     let status_code: u16;
-    let mut buffer: String = "".to_owned();
+    let buffer: String;
 
     if room_id.is_empty() || user_id.is_empty() {
         status_code = 204;
+        buffer = "One of the necessary arguments wasn't provided".to_owned();
     } else {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
@@ -310,10 +314,11 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
     };
 
     let status_code: u16;
-    let mut buffer: String = "".to_owned();
+    let buffer: String;
 
     if room_id.is_empty() || user_id.is_empty() {
         status_code = 204;
+        buffer = "One of the necessary arguments wasn't provided".to_owned();
     } else {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
