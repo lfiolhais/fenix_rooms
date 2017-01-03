@@ -1,10 +1,23 @@
+//! Implementation of a server using Pencil and the FenixEDU API with Heroku
+//! support.
+//!
+//! There are six routes defined for the API (`/api/`):
+//!
+//! * GET `spaces` => Returns the top level spaces from the FenixEDU API;
+//! * GET `id/<id>` => Returns the list of contained spaces inside each `id`
+//!                    or, if there are no contained spaces, the name and
+//!                    capacity of the endpoint is return;
+//! * POST `create_user` => Creates a user in the database.
+//! * POST `create_room` => Adds a room to the database. A room exists when
+//!                         the `contained_space` list is empty.
+//! * POST `check_in` => Adds a user to a specified room.
+//! * POST `check_out` => Removes a user from a specified room.
 #![feature(proc_macro)]
 
 extern crate fenix_rooms;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
-extern crate serde_json;
 extern crate pencil;
 
 use fenix_rooms::api::handlers;
