@@ -189,9 +189,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         None => "".to_owned(),
     };
 
-    let status_code: u16;
-
     if admin_id == "0" {
+        let status_code: u16;
         let mut buffer: String = "".to_owned();
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
             status_code = 204;
