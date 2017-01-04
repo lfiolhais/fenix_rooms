@@ -11,23 +11,21 @@ use std::collections::HashMap;
 // Basic Structs
 // ///////////////////////////////////////////////////////////
 #[derive(Deserialize, Serialize, Default)]
-pub struct Room {
-    name: String,
-    capacity: HashMap<String, u64>,
-}
-
-#[derive(Deserialize, Serialize)]
 pub struct GenericSpace {
     name: String,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
+    #[serde(default)]
+    capacity: HashMap<String, u64>
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ContainedSpace {
     id: String,
     name: String,
 }
+
+type Space = Vec<ContainedSpace>;
 
 // ///////////////////////////////////////////////////////////
 // Constants

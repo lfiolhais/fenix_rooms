@@ -1,20 +1,26 @@
 //! Implementation of a server using Pencil and the FenixEDU API with Heroku
 //! support. There are seven routes defined for the API (`/api/`).
 //!
+//! For room management there are only three relevant fields from the FenixEDU
+//! API response: `name`, `containedSpaces` and `capacity`. A space is
+//! considered a room when `containedSpaces` has zero elements.
+//!
 //! # REST API
 //!
 //! ## GET
 //! * `spaces` => Returns the top level spaces from the FenixEDU API;
-//! * `id/<id>` => Returns the list of contained spaces inside each `id`
-//!                or, if there are no contained spaces, the name and
-//!                capacity of the endpoint is return;
+//! * `id/<id>` => Returns the list of contained spaces, name and capacity
+//!                when relevant inside each `id`;
 //! * `rooms` => Returns the rooms available to check-in and check-out of
-//!              in the DB.
+//!              in the DB;
+//! * `path/<my_path>` => Returns the contained spaces, name and capacity
+//!                       when applicable for the specified hierarchical
+//!                       path.
 //!
 //! ## POST
-//! * `create_user` => Creates a user in the database.
+//! * `create_user` => Creates a user in the database;
 //! * `create_room` => Adds a room to the database. A room exists when
-//!                    the `contained_space` list is empty.
+//!                    the `contained_space` list is empty;
 //! * `check_in` => Adds a user to a specified room.
 //!
 //! ## DELETE
@@ -51,52 +57,35 @@ fn main() {
     // /////
     // ID
     app.get("/api/id/<id:int>", "id_handler", handlers::id_handler);
-
     // Spaces
     app.get("/api/spaces", "spaces_handler", handlers::spaces_handler);
-
     // Rooms
     app.get("/api/rooms", "rooms_handler", handlers::rooms_handler);
-
-    // // Campus
-    // app.get("/api/<campus:string>",
-    //         "campus_handler",
-    //         handlers::campus_handler);
-    // // Building
-    // app.get("/api/<campus:string>/building/<building:string>",
-    //         "building_handler",
-    //         handlers::building_handler);
-    // // Floor
-    // app.get("/api/<campus:string>/<building:string>/floor/<floor:string>",
-    //         "floor_handler",
-    //         handlers::floor_handler);
-    // app.get("/api/<campus:string>/<building:string>/<floor:string>/floor/<floor2:string>",
-    //         "floor_handler",
-    //         handlers::floor_handler);
-    // // Room
-    // app.get("/api/<campus:string>/<building:string>/room/<room:string>",
-    //         "room_handler",
-    //         handlers::room_handler);
-    // app.get("/api/<campus:string>/<building:string>/<floor:string>/room/<room:string>",
-    //         "room_handler",
-    //         handlers::room_handler);
-    // app.get("/api/<campus:string>/<building:string>/<floor:string>/<floor2:string>/room/<room:\
-    //          string>",
-    //         "room_handler",
-    //         handlers::room_handler);
+    // Path
+    app.get("/api/path/<my_path:path>",
+            "path_handler",
+            handlers::path_handler);
 
     // /////
     // POST
     // /////
+    // Create User
     app.post("/api/create_user",
              "create_user_handler",
              handlers::create_user_handler);
+    // Create Room
     app.post("/api/create_room",
              "create_room_handler",
              handlers::create_room_handler);
+    // Check In
     app.post("/api/check_in",
              "check_in_handler",
              handlers::check_in_handler);
+
+    // /////
+    // DELETE
+    // /////
+    // Check Out
     app.delete("/api/check_out",
                "check_out_handler",
                handlers::check_out_handler);

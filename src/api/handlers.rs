@@ -5,7 +5,7 @@
 use super::hyper::status::StatusCode;
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
-use super::{GenericSpace, Room};
+use super::{GenericSpace, Space};
 use super::getters;
 use utils;
 use super::DB_BASE_URL;
@@ -27,18 +27,17 @@ use super::DB_BASE_URL;
 /// read the contents and send it as JSON.
 pub fn spaces_handler(_: &mut Request) -> PencilResult {
     // Get all spaces from Fenix
-    let space: String = match getters::get_spaces_from_id("") {
-        Ok(space) => space,
+    match getters::get_spaces_from_id("") {
+        Ok(space) => {
+            // Build response and set content to JSON
+            let mut response = Response::from(space);
+            response.set_content_type("application/json");
+            Ok(response)
+        }
         Err(err) => {
             return Err(PenUserError(err));
         }
-    };
-
-    // Build response and set content to JSON
-    let mut response = Response::from(space);
-    response.set_content_type("application/json");
-
-    Ok(response)
+    }
 }
 
 /// Handler for IDs using the `FenixEDU` API
@@ -53,6 +52,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         None => "",
     };
 
+    // Perform GET request with id
     let generic_space: String = match getters::get_spaces_from_id(id) {
         Ok(data) => data,
         Err(err) => {
@@ -60,6 +60,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         }
     };
 
+    // Convert JSON to Object removing the unecessary fields in the process
     let space: GenericSpace = match utils::from_json_to_obj(&generic_space) {
         Ok(space) => space,
         Err(err) => {
@@ -67,37 +68,18 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         }
     };
 
-    let mut response: Response;
-    if !space.contained_spaces.is_empty() {
-        let generic_space_contained_spaces_serialized: String =
-            match utils::from_obj_to_json(&space.contained_spaces) {
-                Ok(json) => json,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-
-        // Build response and set content to JSON
-        response = Response::from(generic_space_contained_spaces_serialized);
-        response.set_content_type("application/json");
-    } else {
-        let room: Room = match utils::from_json_to_obj(&generic_space) {
-            Ok(room) => room,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-        let room_json: String = match utils::from_obj_to_json(&room) {
+    // Turn the simplified object back into JSON
+    let generic_space_contained_spaces_serialized: String =
+        match utils::from_obj_to_json(&space) {
             Ok(json) => json,
             Err(err) => {
                 return Err(PenUserError(UserError::new(err)));
             }
         };
 
-        // Build response and set content to JSON
-        response = Response::from(room_json);
-        response.set_content_type("application/json");
-    }
+    // Build response and set content to JSON response
+    let mut response = Response::from(generic_space_contained_spaces_serialized);
+    response.set_content_type("application/json");
 
     Ok(response)
 }
@@ -363,16 +345,86 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         }
     };
 
-    let buffer: String = match utils::read_response_body(&mut response, StatusCode::Ok) {
-        Ok(buffer) => buffer,
+    match utils::read_response_body(&mut response, StatusCode::Ok) {
+        Ok(buffer) => {
+            let mut response = Response::from(buffer);
+            response.set_content_type("application/json");
+            response.status_code = 200;
+            Ok(response)
+        }
         Err(err) => {
             return Err(PenUserError(UserError::new(err)));
         }
+    }
+
+}
+
+/// Translate the id's to names
+///
+/// This handler translates id's to names letting you browse the spaces API
+/// hierarchically. Previously `/api/id/<id>` and now
+/// `/api/path/level1/level2/level3`. Keep in mind that by increasing the amount
+/// of levels in the path the more GET requests are made. The response time is
+/// now dependent on the responsiveness of the FenixEDU API. Also this might
+/// cause a mini DDOS.
+///
+/// # Output
+/// JSON message with the contents of the requested space.
+pub fn path_handler(request: &mut Request) -> PencilResult {
+    let path: String = match request.view_args.get("my_path") {
+        Some(path) => path.to_owned(),
+        None => {
+            return Err(PenUserError(UserError::new("No path provided")));
+        }
     };
 
-    let mut response = Response::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = 200;
+    // Get all spaces from Fenix
+    let spaces: Space = match getters::get_spaces_from_id("") {
+        Ok(spaces) => {
+            match utils::from_json_to_obj(&spaces) {
+                Ok(obj) => obj,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            }
+        }
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
 
-    Ok(response)
+    let mut contained_spaces: Space = spaces;
+    let mut my_space: GenericSpace = Default::default();
+
+    // Search for the path in FenixEDU API
+    for point in path.split("/") {
+        // Send a GET request to Fenix and convert the response into an object
+        my_space = match getters::search_contained_spaces(point, &contained_spaces) {
+            Ok(body) => {
+                match utils::from_json_to_obj(&body) {
+                    Ok(spaces) => spaces,
+                    Err(err) => {
+                        return Err(PenUserError(UserError::new(err)));
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(PenUserError(err));
+            }
+        };
+
+        contained_spaces = my_space.contained_spaces.clone(); // <= hate this
+    }
+
+    // Convert Object to JSON
+    match utils::from_obj_to_json(&my_space) {
+        Ok(json) => {
+            // Build Response
+            let mut response = Response::from(json);
+            response.set_content_type("application/json");
+            response.status_code = 200;
+            Ok(response)
+        }
+        Err(err) => Err(PenUserError(UserError::new(err))),
+    }
 }
