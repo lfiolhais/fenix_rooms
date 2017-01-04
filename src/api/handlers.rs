@@ -347,3 +347,32 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
 
     Ok(response)
 }
+
+/// Gets the list of rooms in the Database
+///
+/// # Output
+/// A Response with a JSON messsage and correct status code.
+pub fn rooms_handler(_: &mut Request) -> PencilResult {
+    let url: &str = &format!("{}/rooms", DB_BASE_URL);
+
+    let mut response = match utils::get_request(url) {
+        Ok(response) => response,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(PenUserError(error));
+        }
+    };
+
+    let buffer: String = match utils::read_response_body(&mut response, StatusCode::Ok) {
+        Ok(buffer) => buffer,
+        Err(err) => {
+            return Err(PenUserError(UserError::new(err)));
+        }
+    };
+
+    let mut response = Response::from(buffer);
+    response.set_content_type("application/json");
+    response.status_code = 200;
+
+    Ok(response)
+}

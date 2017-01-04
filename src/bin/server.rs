@@ -1,17 +1,24 @@
 //! Implementation of a server using Pencil and the FenixEDU API with Heroku
-//! support.
+//! support. There are seven routes defined for the API (`/api/`).
 //!
-//! There are six routes defined for the API (`/api/`):
+//! # REST API
 //!
-//! * GET `spaces` => Returns the top level spaces from the FenixEDU API;
-//! * GET `id/<id>` => Returns the list of contained spaces inside each `id`
-//!                    or, if there are no contained spaces, the name and
-//!                    capacity of the endpoint is return;
-//! * POST `create_user` => Creates a user in the database.
-//! * POST `create_room` => Adds a room to the database. A room exists when
-//!                         the `contained_space` list is empty.
-//! * POST `check_in` => Adds a user to a specified room.
-//! * POST `check_out` => Removes a user from a specified room.
+//! ## GET
+//! * `spaces` => Returns the top level spaces from the FenixEDU API;
+//! * `id/<id>` => Returns the list of contained spaces inside each `id`
+//!                or, if there are no contained spaces, the name and
+//!                capacity of the endpoint is return;
+//! * `rooms` => Returns the rooms available to check-in and check-out of
+//!              in the DB.
+//!
+//! ## POST
+//! * `create_user` => Creates a user in the database.
+//! * `create_room` => Adds a room to the database. A room exists when
+//!                    the `contained_space` list is empty.
+//! * `check_in` => Adds a user to a specified room.
+//!
+//! ## DELETE
+//! * `check_out` => Removes a user from a specified room.
 #![feature(proc_macro)]
 
 extern crate fenix_rooms;
@@ -47,6 +54,9 @@ fn main() {
 
     // Spaces
     app.get("/api/spaces", "spaces_handler", handlers::spaces_handler);
+
+    // Rooms
+    app.get("/api/rooms", "rooms_handler", handlers::rooms_handler);
 
     // // Campus
     // app.get("/api/<campus:string>",
@@ -87,9 +97,9 @@ fn main() {
     app.post("/api/check_in",
              "check_in_handler",
              handlers::check_in_handler);
-    app.post("/api/check_out",
-             "check_out_handler",
-             handlers::check_out_handler);
+    app.delete("/api/check_out",
+               "check_out_handler",
+               handlers::check_out_handler);
 
     // Run server
     let listen_addr = if env::var("DYNO").is_ok() {
