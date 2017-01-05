@@ -91,7 +91,7 @@ pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
 ///
 /// # Arguments
 /// * `response` => The response received from the request performed.
-/// * `status` => The expected StatusCode.
+/// * `status` => The expected `StatusCode`.
 ///
 /// # Return Value
 /// The contents of the body or a error message.
@@ -131,7 +131,7 @@ pub fn read_response_body(response: &mut Response, status: StatusCode) -> Result
 pub fn from_json_to_obj<T>(json: &str) -> Result<T, String>
     where T: Deserialize
 {
-    match serde_json::from_str(&json) {
+    match serde_json::from_str(json) {
         Ok(obj) => Ok(obj),
         Err(err) => Err(format!("JSON encoder error: {}", err)),
     }

@@ -34,9 +34,7 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
             response.set_content_type("application/json");
             Ok(response)
         }
-        Err(err) => {
-            return Err(PenUserError(err));
-        }
+        Err(err) => Err(PenUserError(err)),
     }
 }
 
@@ -69,13 +67,12 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     };
 
     // Turn the simplified object back into JSON
-    let generic_space_contained_spaces_serialized: String =
-        match utils::from_obj_to_json(&space) {
-            Ok(json) => json,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
+    let generic_space_contained_spaces_serialized: String = match utils::from_obj_to_json(&space) {
+        Ok(json) => json,
+        Err(err) => {
+            return Err(PenUserError(UserError::new(err)));
+        }
+    };
 
     // Build response and set content to JSON response
     let mut response = Response::from(generic_space_contained_spaces_serialized);
@@ -352,9 +349,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
             response.status_code = 200;
             Ok(response)
         }
-        Err(err) => {
-            return Err(PenUserError(UserError::new(err)));
-        }
+        Err(err) => Err(PenUserError(UserError::new(err))),
     }
 
 }
@@ -397,7 +392,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     let mut my_space: GenericSpace = Default::default();
 
     // Search for the path in FenixEDU API
-    for point in path.split("/") {
+    for point in path.split('/') {
         // Send a GET request to Fenix and convert the response into an object
         my_space = match getters::search_contained_spaces(point, &contained_spaces) {
             Ok(body) => {
