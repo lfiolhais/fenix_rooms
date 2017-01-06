@@ -2,13 +2,13 @@
 //!
 //! Each handler reads the request if need be, gets the information from getters
 //! and returns a Response accordingly,
-use super::hyper::status::StatusCode;
-use super::pencil::{Request, Response, PencilResult};
-use super::pencil::{UserError, PenUserError};
-use super::{GenericSpace, Space};
-use super::{getters, misc};
 use utils;
+
 use super::DB_BASE_URL;
+use super::hyper::status::StatusCode;
+use super::hyper::client::Response as HyperResponse;
+use super::pencil::{Request, Response as PencilResponse, PencilResult, UserError, PenUserError};
+use super::{GenericSpace, Space, getters, misc};
 
 /// Handler for all spaces at IST
 ///
@@ -27,7 +27,7 @@ use super::DB_BASE_URL;
 /// read the contents and send it as JSON.
 pub fn spaces_handler(_: &mut Request) -> PencilResult {
     // Get all spaces from Fenix
-    let mut get_response = match getters::get_spaces_from_id("") {
+    let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
         Ok(response) => response,
         Err(err) => {
             return Err(PenUserError(err));
@@ -51,7 +51,7 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
     }
 
     // Build response and set content to JSON response
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -78,7 +78,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
         // Perform GET request with id
-        let mut get_response = match getters::get_spaces_from_id(id) {
+        let mut get_response: HyperResponse = match getters::get_spaces_from_id(id) {
             Ok(response) => response,
             Err(err) => {
                 return Err(PenUserError(err));
@@ -120,7 +120,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     }
 
     // Build response and set content to JSON response
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -154,7 +154,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/users", DB_BASE_URL);
         let body: &str = &format!("{{\"username\": \"{}\"}}", username);
 
-        let mut response = match utils::post_request(url, body) {
+        let mut response: HyperResponse = match utils::post_request(url, body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -180,7 +180,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 
     }
 
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -246,7 +246,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             };
 
             if room_exists {
-                let mut response = match utils::post_request(url, body) {
+                let mut response: HyperResponse = match utils::post_request(url, body) {
                     Ok(response) => response,
                     Err(err) => {
                         let error = UserError::new(err);
@@ -276,14 +276,14 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             }
         }
 
-        let mut response = Response::from(buffer);
+        let mut response = PencilResponse::from(buffer);
         response.set_content_type("application/json");
         response.status_code = status_code;
 
         return Ok(response);
     }
 
-    let mut response = Response::from("{ \"error\": \"Unauthorized access to DB\"}");
+    let mut response = PencilResponse::from("{ \"error\": \"Unauthorized access to DB\"}");
     response.status_code = 401;
     response.set_content_type("application/json");
 
@@ -321,7 +321,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        let mut response = match utils::post_request(url, body) {
+        let mut response: HyperResponse = match utils::post_request(url, body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -349,7 +349,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         }
     }
 
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -387,7 +387,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        let mut response = match utils::delete_request(url, body) {
+        let mut response: HyperResponse = match utils::delete_request(url, body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -415,7 +415,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         }
     }
 
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -429,7 +429,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
 pub fn rooms_handler(_: &mut Request) -> PencilResult {
     let url: &str = &format!("{}/rooms", DB_BASE_URL);
 
-    let mut response = match utils::get_request(url) {
+    let mut response: HyperResponse = match utils::get_request(url) {
         Ok(response) => response,
         Err(err) => {
             let error = UserError::new(err);
@@ -453,7 +453,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
     }
 
-    let mut response = Response::from(buffer);
+    let mut response = PencilResponse::from(buffer);
     response.set_content_type("application/json");
     response.status_code = status_code;
 
@@ -480,7 +480,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     };
 
     // Get all spaces from Fenix
-    let mut get_response = match getters::get_spaces_from_id("") {
+    let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
         Ok(response) => response,
         Err(err) => {
             return Err(PenUserError(err));
@@ -536,7 +536,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     match utils::from_obj_to_json(&my_space) {
         Ok(json) => {
             // Build Response
-            let mut response = Response::from(json);
+            let mut response = PencilResponse::from(json);
             response.set_content_type("application/json");
             response.status_code = 200;
             Ok(response)

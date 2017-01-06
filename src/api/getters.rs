@@ -1,6 +1,6 @@
 //! Getters from the requests performed at Fenix
 use super::hyper::status::StatusCode;
-use super::hyper::client::Response;
+use super::hyper::client::Response as HyperResponse;
 use super::pencil::UserError;
 use super::FENIX_BASE_URL;
 use super::ContainedSpace;
@@ -63,7 +63,7 @@ pub fn search_contained_spaces(name: &str,
 ///
 /// # Output
 /// Result of the transaction with a Space and String tuple and a `UserError`.
-pub fn get_spaces_from_id(id: &str) -> Result<Response, UserError> {
+pub fn get_spaces_from_id(id: &str) -> Result<HyperResponse, UserError> {
     // Format URL
     let url = &format!("{}/{}", FENIX_BASE_URL, id);
 

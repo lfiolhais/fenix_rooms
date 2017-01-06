@@ -40,10 +40,13 @@ pub mod handlers;
 mod getters;
 mod misc {
     use api::pencil::UserError;
-    use super::hyper::status::StatusCode;
-    use super::getters;
+    use utils::{from_json_to_obj, read_response_body};
 
-    /// Checks in the FenixEDU API if the space with id `id` exists.
+    use super::hyper::status::StatusCode;
+    use super::{getters, GenericSpace};
+
+    /// Checks in the FenixEDU API if the space with id `id` exists. A space is
+    /// considered a room when the parameter `contained_spaces` is empty.
     ///
     /// # Arguments
     /// * `id` => id of the space.
@@ -54,8 +57,28 @@ mod misc {
     pub fn does_room_exist(id: &str) -> Result<bool, UserError> {
         // Get space with id `id` from FenixEDU
         match getters::get_spaces_from_id(id) {
-            Ok(response) => {
-                if response.status == StatusCode::Ok {
+            Ok(mut response) => {
+                let json: String = match read_response_body(&mut response) {
+                    Ok(body) => body,
+                    Err(err) => {
+                        return Err(UserError::new(err));
+                    }
+                };
+
+                let is_room: bool = match from_json_to_obj::<GenericSpace>(&json) {
+                    Ok(obj) => {
+                        if obj.contained_spaces.is_empty() {
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    Err(err) => {
+                        return Err(UserError::new(err));
+                    }
+                };
+
+                if response.status == StatusCode::Ok && is_room {
                     Ok(true)
                 } else {
                     Ok(false)
