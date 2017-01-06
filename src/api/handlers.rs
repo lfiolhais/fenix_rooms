@@ -223,10 +223,10 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         None => "".to_owned(),
     };
 
-    if admin_id == "0" {
-        let status_code: u16;
-        let buffer: String;
+    let mut status_code: u16 = 401; // Default to Unauthorized.
+    let mut buffer: String = "{ \"error\": \"Unauthorized access to DB\"}".to_owned(); // Default to unauthorized
 
+    if admin_id == "0" {
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
             status_code = 400;
             buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
@@ -275,16 +275,10 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                     .to_owned();
             }
         }
-
-        let mut response = PencilResponse::from(buffer);
-        response.set_content_type("application/json");
-        response.status_code = status_code;
-
-        return Ok(response);
     }
 
-    let mut response = PencilResponse::from("{ \"error\": \"Unauthorized access to DB\"}");
-    response.status_code = 401;
+    let mut response = PencilResponse::from(buffer);
+    response.status_code = status_code;
     response.set_content_type("application/json");
 
     Ok(response)
