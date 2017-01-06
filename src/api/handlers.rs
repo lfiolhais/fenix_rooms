@@ -114,8 +114,8 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
 /// send it as JSON.
 pub fn id_handler(request: &mut Request) -> PencilResult {
     // Get ID from request
-    let id: &str = match request.view_args.get("id") {
-        Some(id) => id as &str,
+    match request.view_args.get("id") {
+        Some(id) => process_id::<GenericSpace>(id),
         None => {
             // Build response and set content to JSON response
             let mut response = PencilResponse::from("{\"error\": \"The id \
@@ -125,9 +125,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
 
             return Ok(response);
         }
-    };
-
-    process_id::<GenericSpace>(id)
+    }
 }
 
 /// Creates a User in the Database
