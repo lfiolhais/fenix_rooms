@@ -110,25 +110,18 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     // Get ID from request
     let id: &str = match request.view_args.get("id") {
         Some(id) => id as &str,
-        None => "",
+        None => {
+            // Build response and set content to JSON response
+            let mut response = PencilResponse::from("{\"error\": \"One of the necessary \
+                                                     arguments wasn't provided\"}");
+            response.set_content_type("application/json");
+            response.status_code = 400;
+
+            Ok(response)
+        }
     };
 
-    if id.is_empty() {
-        let status_code: u16;
-        let buffer: String;
-
-        status_code = 400;
-        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
-
-        // Build response and set content to JSON response
-        let mut response = PencilResponse::from(buffer);
-        response.set_content_type("application/json");
-        response.status_code = status_code;
-
-        Ok(response)
-    } else {
-        process_id::<GenericSpace>(&id)
-    }
+    process_id::<GenericSpace>(&id)
 }
 
 /// Creates a User in the Database
