@@ -72,10 +72,8 @@ mod misc {
                         } else {
                             false
                         }
-                    },
-                    Err(err) => {
-                        return Err(UserError::new(err));
                     }
+                    Err(_) => false,
                 };
 
                 if response.status == StatusCode::Ok && is_room {

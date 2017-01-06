@@ -13,6 +13,10 @@ use super::hyper::client::Response as HyperResponse;
 use super::pencil::{Request, Response as PencilResponse, PencilResult, UserError, PenUserError};
 use super::{GenericSpace, Space, getters, misc};
 
+// /////////////////////////////////////////////////////////////////////////////
+// ID Handling
+// /////////////////////////////////////////////////////////////////////////////
+
 /// Process the provided `id`
 ///
 /// To process the `id` a get request is sent to `FenixEDU` with it. Then the
@@ -85,7 +89,7 @@ fn process_id<T>(id: &str) -> PencilResult
     Ok(response)
 }
 
-/// Handler for all spaces at IST
+/// Handler for the top level spaces at IST
 ///
 /// The handler calls `utils::get_spaces_from_id()` to perform the GET request
 /// required. If the request was successful its contents will be sent as JSON.
@@ -128,6 +132,148 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     }
 }
 
+/// Translate the ID's to names
+///
+/// This handler translates id's to names letting you browse the spaces API
+/// hierarchically. Previously `/api/id/<id>` and now
+/// `/api/path/level1/level2/level3`. Keep in mind that by increasing the amount
+/// of levels in the path the more GET requests are made. The response time is
+/// now dependent on the responsiveness of the `FenixEDU` API. Also this might
+/// cause a mini DDOS.
+///
+/// # Output
+/// JSON message with the contents of the requested space.
+pub fn path_handler(request: &mut Request) -> PencilResult {
+    let path: String = match request.view_args.get("my_path") {
+        Some(path) => path.to_owned(),
+        None => {
+            return Err(PenUserError(UserError::new("No path provided")));
+        }
+    };
+
+    // Get all spaces from Fenix
+    let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    let spaces: Space;
+    let buffer: String;
+
+    if get_response.status == StatusCode::Ok {
+        buffer = match utils::read_response_body(&mut get_response) {
+            Ok(buf) => buf,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+    } else {
+        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
+    }
+
+    spaces = match utils::from_json_to_obj(&buffer) {
+        Ok(obj) => obj,
+        Err(err) => {
+            return Err(PenUserError(UserError::new(err)));
+        }
+    };
+
+    let mut contained_spaces: Space = spaces;
+    let mut my_space: GenericSpace = Default::default();
+
+    // Search for the path in FenixEDU API
+    for point in path.split('/') {
+        // Send a GET request to Fenix and convert the response into an object
+        my_space = match getters::search_contained_spaces(point, &contained_spaces) {
+            Ok(body) => {
+                match utils::from_json_to_obj(&body) {
+                    Ok(spaces) => spaces,
+                    Err(err) => {
+                        return Err(PenUserError(UserError::new(err)));
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(PenUserError(err));
+            }
+        };
+
+        contained_spaces = my_space.contained_spaces.clone(); // <= hate this
+    }
+
+    // Convert Object to JSON
+    match utils::from_obj_to_json(&my_space) {
+        Ok(json) => {
+            // Build Response
+            let mut response = PencilResponse::from(json);
+            response.set_content_type("application/json");
+            response.status_code = 200;
+            Ok(response)
+        }
+        Err(err) => Err(PenUserError(UserError::new(err))),
+    }
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// Database Requests Handling
+// /////////////////////////////////////////////////////////////////////////////
+
+/// Create an entity in `url` with `body`
+///
+/// To create an entity a POST request is sent to the database. Then the status
+/// of the response is checked. If the result is Ok the contents of the body are
+/// read and passed along to the client. Otherwise one of three things can
+/// happen. First, the object may already exist, an entity might be created that
+/// doesn't exist in the `FenixEDU` API or the database is down.
+/// Error messages and status codes are sent apropriately.
+///
+/// # Arguments
+/// * `url` => the url where the entity will be created
+/// * `body` => the body of the request
+///
+/// # Return Value
+/// The JSON message processed or an error.
+fn create_entity(url: &str, body: &str) -> PencilResult {
+    let mut response: HyperResponse = match utils::post_request(&url, &body) {
+        Ok(response) => response,
+        Err(err) => {
+            let error = UserError::new(err);
+            return Err(PenUserError(error));
+        }
+    };
+
+    let buffer: String;
+    let status_code: u16;
+
+    if response.status == StatusCode::Ok || response.status == StatusCode::Created {
+        status_code = 200;
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+    } else if response.status == StatusCode::UnprocessableEntity {
+        status_code = 422;
+        buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+    } else if response.status == StatusCode::NotFound {
+        status_code = 404;
+        buffer = "{\"error\": \"The arguments weren't found in the database\"}".to_owned();
+    } else {
+        status_code = 503;
+        buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+    }
+
+    let mut response = PencilResponse::from(buffer);
+    response.set_content_type("application/json");
+    response.status_code = status_code;
+
+    Ok(response)
+}
+
 /// Creates a User in the Database
 ///
 /// Create a user in the database with the specified `username` in the body. If
@@ -140,52 +286,21 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
 /// A Response with a JSON messsage and correct status code.
 pub fn create_user_handler(request: &mut Request) -> PencilResult {
     // Get the username from the body of the request if it exists
-    let username: &str = match request.form().get("username") {
-        Some(username) => username,
-        None => "",
-    };
-
-    let status_code: u16;
-    let buffer: String;
-
-    if username.is_empty() {
-        status_code = 400;
-        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
-    } else {
-        let url: String = format!("{}/users", DB_BASE_URL);
-        let body: String = format!("{{\"username\": \"{}\"}}", username);
-
-        let mut response: HyperResponse = match utils::post_request(&url, &body) {
-            Ok(response) => response,
-            Err(err) => {
-                let error = UserError::new(err);
-                return Err(PenUserError(error));
-            }
-        };
-
-        if response.status == StatusCode::Ok || response.status == StatusCode::Created {
-            status_code = 200;
-            buffer = match utils::read_response_body(&mut response) {
-                Ok(buffer) => buffer,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-        } else if response.status == StatusCode::UnprocessableEntity {
-            status_code = 422;
-            buffer = "{\"error\": \"The entity already exists\"}".to_owned();
-        } else {
-            status_code = 503;
-            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+    match request.form().get("username") {
+        Some(username) => {
+            let url: String = format!("{}/users", DB_BASE_URL);
+            let body: String = format!("{{\"username\": \"{}\"}}", username);
+            create_entity(&url, &body)
         }
+        None => {
+            let mut response = PencilResponse::from("{\"error\": \"username \
+                                                     wasn't provided\"}");
+            response.set_content_type("application/json");
+            response.status_code = 400;
 
+            Ok(response)
+        }
     }
-
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
 }
 
 /// Creates a Room in the Database
@@ -248,32 +363,11 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             };
 
             if room_exists {
-                let mut response: HyperResponse = match utils::post_request(&url, &body) {
-                    Ok(response) => response,
-                    Err(err) => {
-                        let error = UserError::new(err);
-                        return Err(PenUserError(error));
-                    }
-                };
-
-                if response.status == StatusCode::Created || response.status == StatusCode::Ok {
-                    buffer = match utils::read_response_body(&mut response) {
-                        Ok(buffer) => buffer,
-                        Err(err) => {
-                            return Err(PenUserError(UserError::new(err)));
-                        }
-                    };
-                    status_code = 200;
-                } else if response.status == StatusCode::UnprocessableEntity {
-                    status_code = 422;
-                    buffer = "{\"error\": \"The entity already exists\"}".to_owned();
-                } else {
-                    status_code = 503;
-                    buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
-                }
+                return create_entity(&url, &body);
             } else {
                 status_code = 404;
-                buffer = "{ \"error\" : \"The provided id does not match a space in FenixEDU\"}"
+                buffer = "{ \"error\" : \"The provided fenix_id does not match a space in \
+                          FenixEDU\"}"
                     .to_owned();
             }
         }
@@ -307,49 +401,18 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         None => "".to_owned(),
     };
 
-    let status_code: u16;
-    let buffer: String;
-
     if room_id.is_empty() || user_id.is_empty() {
-        status_code = 400;
-        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
+        let mut response = PencilResponse::from("{\"error\": \"One of the necessary arguments \
+                                                 wasn't provided\"}");
+        response.set_content_type("application/json");
+        response.status_code = 400;
+
+        Ok(response)
     } else {
         let url: String = format!("{}/checkins", DB_BASE_URL);
         let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
-
-        let mut response: HyperResponse = match utils::post_request(&url, &body) {
-            Ok(response) => response,
-            Err(err) => {
-                let error = UserError::new(err);
-                return Err(PenUserError(error));
-            }
-        };
-
-        if response.status == StatusCode::Created || response.status == StatusCode::Ok {
-            buffer = match utils::read_response_body(&mut response) {
-                Ok(buffer) => buffer,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-            status_code = 200;
-        } else if response.status == StatusCode::UnprocessableEntity {
-            status_code = 422;
-            buffer = "{\"error\": \"The entity already exists\"}".to_owned();
-        } else if response.status == StatusCode::NotFound {
-            status_code = 404;
-            buffer = "{\"error\": \"The user_id or room_id provided was not found\"}".to_owned();
-        } else {
-            status_code = 503;
-            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
-        }
+        create_entity(&url, &body)
     }
-
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
 }
 
 /// Checks out in the Database
@@ -454,89 +517,4 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
     response.status_code = status_code;
 
     Ok(response)
-}
-
-/// Translate the id's to names
-///
-/// This handler translates id's to names letting you browse the spaces API
-/// hierarchically. Previously `/api/id/<id>` and now
-/// `/api/path/level1/level2/level3`. Keep in mind that by increasing the amount
-/// of levels in the path the more GET requests are made. The response time is
-/// now dependent on the responsiveness of the `FenixEDU` API. Also this might
-/// cause a mini DDOS.
-///
-/// # Output
-/// JSON message with the contents of the requested space.
-pub fn path_handler(request: &mut Request) -> PencilResult {
-    let path: String = match request.view_args.get("my_path") {
-        Some(path) => path.to_owned(),
-        None => {
-            return Err(PenUserError(UserError::new("No path provided")));
-        }
-    };
-
-    // Get all spaces from Fenix
-    let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(PenUserError(err));
-        }
-    };
-
-    let spaces: Space;
-    let buffer: String;
-
-    if get_response.status == StatusCode::Ok {
-        buffer = match utils::read_response_body(&mut get_response) {
-            Ok(buf) => buf,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-
-    } else {
-        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
-    }
-
-    spaces = match utils::from_json_to_obj(&buffer) {
-        Ok(obj) => obj,
-        Err(err) => {
-            return Err(PenUserError(UserError::new(err)));
-        }
-    };
-
-    let mut contained_spaces: Space = spaces;
-    let mut my_space: GenericSpace = Default::default();
-
-    // Search for the path in FenixEDU API
-    for point in path.split('/') {
-        // Send a GET request to Fenix and convert the response into an object
-        my_space = match getters::search_contained_spaces(point, &contained_spaces) {
-            Ok(body) => {
-                match utils::from_json_to_obj(&body) {
-                    Ok(spaces) => spaces,
-                    Err(err) => {
-                        return Err(PenUserError(UserError::new(err)));
-                    }
-                }
-            }
-            Err(err) => {
-                return Err(PenUserError(err));
-            }
-        };
-
-        contained_spaces = my_space.contained_spaces.clone(); // <= hate this
-    }
-
-    // Convert Object to JSON
-    match utils::from_obj_to_json(&my_space) {
-        Ok(json) => {
-            // Build Response
-            let mut response = PencilResponse::from(json);
-            response.set_content_type("application/json");
-            response.status_code = 200;
-            Ok(response)
-        }
-        Err(err) => Err(PenUserError(UserError::new(err))),
-    }
 }
