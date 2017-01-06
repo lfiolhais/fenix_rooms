@@ -329,7 +329,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
             buffer = "{\"error\": \"The entity already exists\"}".to_owned();
         } else if response.status == StatusCode::NotFound {
             status_code = 404;
-            buffer = "{\"error\": \"The user_id provided was not found\"}";
+            buffer = "{\"error\": \"The user_id provided was not found\"}".to_owned();
         } else {
             status_code = 503;
             buffer = "{\"error\": \"There is an error in the database\"}".to_owned();

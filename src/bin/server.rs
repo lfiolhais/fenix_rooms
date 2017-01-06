@@ -25,8 +25,6 @@
 //!
 //! ## DELETE
 //! * `check_out` => Removes a user from a specified room.
-#![feature(proc_macro)]
-
 extern crate fenix_rooms;
 #[macro_use]
 extern crate log;
