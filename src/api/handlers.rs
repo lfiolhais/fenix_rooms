@@ -2,13 +2,85 @@
 //!
 //! Each handler reads the request if need be, gets the information from getters
 //! and returns a Response accordingly,
+extern crate serde;
+
 use utils;
+use serde::{Serialize, Deserialize};
 
 use super::DB_BASE_URL;
 use super::hyper::status::StatusCode;
 use super::hyper::client::Response as HyperResponse;
 use super::pencil::{Request, Response as PencilResponse, PencilResult, UserError, PenUserError};
 use super::{GenericSpace, Space, getters, misc};
+
+/// Process the provided `id`
+///
+/// To process the `id` a get request is sent to `FenixEDU` with it. Then the
+/// status of the response is checked. If the result is Ok the contents of the
+/// body are read and passed along to the client. Otherwise one of two things
+/// can happen. First, the provided `id` may not be valid (it doesn't belong to
+/// any space) or the `FenixEDU` servers are down. Error messages and status
+/// codes are sent apropriately.
+///
+/// # Arguments
+/// * `id` => the id of the space to get information
+///
+/// # Return Value
+/// The JSON message processed or an error.
+fn process_id<T>(id: &str) -> PencilResult
+    where T: Serialize + Deserialize
+{
+    // Perform GET request with id
+    let mut get_response: HyperResponse = match getters::get_spaces_from_id(id) {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(PenUserError(err));
+        }
+    };
+
+    let buffer: String;
+    let status_code: u16;
+
+    if get_response.status == StatusCode::Ok {
+        let body: String = match utils::read_response_body(&mut get_response) {
+            Ok(buf) => buf,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+        // Convert JSON to Object removing the unnecessary fields in the process
+        let space: T = match utils::from_json_to_obj(&body) {
+            Ok(space) => space,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+        // Turn the simplified object back into JSON
+        buffer = match utils::from_obj_to_json(&space) {
+            Ok(json) => json,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+        status_code = 200;
+    } else if get_response.status == StatusCode::NotFound {
+        status_code = 404;
+        buffer = "{\"error\": \"The id was not found\"}".to_owned();
+    } else {
+        status_code = 503;
+        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
+    }
+
+    // Build response and set content to JSON response
+    let mut response = PencilResponse::from(buffer);
+    response.set_content_type("application/json");
+    response.status_code = status_code;
+
+    Ok(response)
+}
 
 /// Handler for all spaces at IST
 ///
@@ -26,36 +98,7 @@ use super::{GenericSpace, Space, getters, misc};
 /// Error if the `utils::get_spaces_from_id()` fails. Otherwise
 /// read the contents and send it as JSON.
 pub fn spaces_handler(_: &mut Request) -> PencilResult {
-    // Get all spaces from Fenix
-    let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(PenUserError(err));
-        }
-    };
-
-    let buffer: String;
-    let status_code: u16;
-
-    if get_response.status == StatusCode::Ok {
-        buffer = match utils::read_response_body(&mut get_response) {
-            Ok(buf) => buf,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-        status_code = 200;
-    } else {
-        status_code = 503;
-        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
-    }
-
-    // Build response and set content to JSON response
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
+    process_id::<Space>("")
 }
 
 /// Handler for IDs using the `FenixEDU` API
@@ -70,61 +113,22 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         None => "",
     };
 
-    let status_code: u16;
-    let buffer: String;
-
     if id.is_empty() {
+        let status_code: u16;
+        let buffer: String;
+
         status_code = 400;
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
+
+        // Build response and set content to JSON response
+        let mut response = PencilResponse::from(buffer);
+        response.set_content_type("application/json");
+        response.status_code = status_code;
+
+        Ok(response)
     } else {
-        // Perform GET request with id
-        let mut get_response: HyperResponse = match getters::get_spaces_from_id(id) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(PenUserError(err));
-            }
-        };
-
-        if get_response.status == StatusCode::Ok {
-            let body = match utils::read_response_body(&mut get_response) {
-                Ok(buf) => buf,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-
-            // Convert JSON to Object removing the unecessary fields in the process
-            let space: GenericSpace = match utils::from_json_to_obj(&body) {
-                Ok(space) => space,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-
-            // Turn the simplified object back into JSON
-            buffer = match utils::from_obj_to_json(&space) {
-                Ok(json) => json,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-
-            status_code = 200;
-        } else if get_response.status == StatusCode::NotFound {
-            status_code = 404;
-            buffer = "{\"error\": \"The id was not found\"}".to_owned();
-        } else {
-            status_code = 503;
-            buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
-        }
+        process_id::<GenericSpace>(&id)
     }
-
-    // Build response and set content to JSON response
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
 }
 
 /// Creates a User in the Database
@@ -223,8 +227,9 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         None => "".to_owned(),
     };
 
-    let mut status_code: u16 = 401; // Default to Unauthorized.
-    let mut buffer: String = "{ \"error\": \"Unauthorized access to DB\"}".to_owned(); // Default to unauthorized
+    // Default to Unauthorized.
+    let mut status_code: u16 = 401;
+    let mut buffer: String = "{ \"error\": \"Unauthorized access to DB\"}".to_owned();
 
     if admin_id == "0" {
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
@@ -234,9 +239,9 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             let url: String = format!("{}/rooms", DB_BASE_URL);
             let body: String = format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
                                        {}}}",
-                                      location,
-                                      capacity,
-                                      fenix_id);
+                                       location,
+                                       capacity,
+                                       fenix_id);
 
             let room_exists: bool = match misc::is_room(&fenix_id) {
                 Ok(room_exists) => room_exists,
