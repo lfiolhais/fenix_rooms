@@ -28,6 +28,23 @@ pub struct ContainedSpace {
 type Space = Vec<ContainedSpace>;
 
 // ///////////////////////////////////////////////////////////
+// Enumerators
+// ///////////////////////////////////////////////////////////
+/// Possible search results when searching for a name in the contained spaces parameter
+///
+/// # Values
+/// * `Ok` is used when the desired search result was achieved;
+/// * `NotFound` is used when the result isn't found;
+/// * `Error` is used when an error is found that is out of the context of this
+/// application, e.g., a service crashing.
+pub enum SearchResult {
+    Ok(String),
+    NotFound(String),
+    Error(String),
+}
+
+
+// ///////////////////////////////////////////////////////////
 // Constants
 // ///////////////////////////////////////////////////////////
 const FENIX_BASE_URL: &'static str = "https://fenix.tecnico.ulisboa.pt/api/fenix/v1/spaces";

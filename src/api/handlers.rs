@@ -5,13 +5,16 @@
 extern crate serde;
 
 use utils;
-use serde::{Serialize, Deserialize};
 
-use super::DB_BASE_URL;
+use serde::{Serialize, Deserialize};
 use super::hyper::status::StatusCode;
 use super::hyper::client::Response as HyperResponse;
 use super::pencil::{Request, Response as PencilResponse, PencilResult, UserError, PenUserError};
-use super::{GenericSpace, Space, getters, misc};
+
+use super::DB_BASE_URL;
+use super::{GenericSpace, Space};
+use super::{getters, misc};
+use super::SearchResult;
 
 // /////////////////////////////////////////////////////////////////////////////
 // ID Handling
@@ -188,7 +191,27 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     for point in path.split('/') {
         // Send a GET request to Fenix and convert the response into an object
         my_space = match getters::search_contained_spaces(point, &contained_spaces) {
-            Ok(body) => {
+            Ok(result) => {
+                let body: String = match result {
+                    SearchResult::Ok(body) => body,
+                    SearchResult::NotFound(msg) => {
+                        // Build Response
+                        let mut response = PencilResponse::from(format!("{{\"error\": \"{}\"}}",
+                                                                        msg));
+                        response.set_content_type("application/json");
+                        response.status_code = 404;
+                        return Ok(response);
+                    }
+                    SearchResult::Error(msg) => {
+                        // Build Response
+                        let mut response = PencilResponse::from(format!("{{\"error\": \"{}\"}}",
+                                                                        msg));
+                        response.set_content_type("application/json");
+                        response.status_code = 503;
+                        return Ok(response);
+                    }
+                };
+
                 match utils::from_json_to_obj(&body) {
                     Ok(spaces) => spaces,
                     Err(err) => {

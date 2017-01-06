@@ -3,7 +3,7 @@ use super::hyper::status::StatusCode;
 use super::hyper::client::Response as HyperResponse;
 use super::pencil::UserError;
 use super::FENIX_BASE_URL;
-use super::ContainedSpace;
+use super::{ContainedSpace, SearchResult};
 use utils;
 
 /// Search for a space with a specified `name`
@@ -16,7 +16,7 @@ use utils;
 /// String with the GET response or an `UserError`
 pub fn search_contained_spaces(name: &str,
                                contained_spaces: &[ContainedSpace])
-                               -> Result<String, UserError> {
+                               -> Result<SearchResult, UserError> {
     // Search for a the `name`
     let mut fenix_id: &str = "";
     for i in contained_spaces {
@@ -27,8 +27,7 @@ pub fn search_contained_spaces(name: &str,
     }
 
     if fenix_id.is_empty() {
-        let error = UserError::new(format!("No id found for space {}", name));
-        return Err(error);
+        return Ok(SearchResult::NotFound(format!("{} was not found", name)));
     }
 
     let url: String = format!("{}/{}", FENIX_BASE_URL, fenix_id);
@@ -50,10 +49,10 @@ pub fn search_contained_spaces(name: &str,
             }
         };
     } else {
-        return Err(UserError::new("{\"error\": \"Fenix had an error\"}"));
+        return Ok(SearchResult::Error("{\"error\": \"Fenix had an error\"}".to_owned()));
     }
 
-    Ok(body)
+    Ok(SearchResult::Ok(body))
 }
 
 /// Send a GET request to `FenixEDU` with the specified space `id`.
