@@ -54,7 +54,7 @@ mod misc {
     /// # Return Value
     /// If the room exists true, else false. If the `getters::get_spaces_from_id(<id>)`
     /// returns an error that will be the error passed.
-    pub fn does_room_exist(id: &str) -> Result<bool, UserError> {
+    pub fn is_room(id: &str) -> Result<bool, UserError> {
         // Get space with id `id` from FenixEDU
         match getters::get_spaces_from_id(id) {
             Ok(mut response) => {

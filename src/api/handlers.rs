@@ -238,7 +238,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                                       capacity,
                                       fenix_id);
 
-            let room_exists: bool = match misc::does_room_exist(&fenix_id) {
+            let room_exists: bool = match misc::is_room(&fenix_id) {
                 Ok(room_exists) => room_exists,
                 Err(err) => {
                     return Err(PenUserError(err));
