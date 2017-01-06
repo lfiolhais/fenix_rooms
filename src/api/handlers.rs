@@ -151,10 +151,10 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
         status_code = 400;
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
-        let url: &str = &format!("{}/users", DB_BASE_URL);
-        let body: &str = &format!("{{\"username\": \"{}\"}}", username);
+        let url: String = format!("{}/users", DB_BASE_URL);
+        let body: String = format!("{{\"username\": \"{}\"}}", username);
 
-        let mut response: HyperResponse = match utils::post_request(url, body) {
+        let mut response: HyperResponse = match utils::post_request(&url, &body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -199,10 +199,10 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 /// # Output
 /// A Response with a JSON messsage and correct status code.
 pub fn create_room_handler(request: &mut Request) -> PencilResult {
-    // Get the id and capacity from the body of the request if they exists. I
-    // need to clone the parameter because Pencil returns a reference to the
-    // Struct and doesn't allow me to consume the contents of the form. We are
-    // essentially wasting memory.
+    // Get the `fenix_id`, `capacity`, `location` and `admin_id` from the body
+    // of the request if they exists. I need to clone the parameter because
+    // Pencil returns a reference to the Struct and doesn't allow me to consume
+    // the contents of the form. We are essentially wasting memory.
     let location: String = match request.form().get("location") {
         Some(location) => location.clone(),
         None => "".to_owned(),
@@ -231,8 +231,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             status_code = 400;
             buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
         } else {
-            let url: &str = &format!("{}/rooms", DB_BASE_URL);
-            let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
+            let url: String = format!("{}/rooms", DB_BASE_URL);
+            let body: String = format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
                                        {}}}",
                                       location,
                                       capacity,
@@ -246,7 +246,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             };
 
             if room_exists {
-                let mut response: HyperResponse = match utils::post_request(url, body) {
+                let mut response: HyperResponse = match utils::post_request(&url, &body) {
                     Ok(response) => response,
                     Err(err) => {
                         let error = UserError::new(err);
@@ -318,10 +318,10 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         status_code = 400;
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
-        let url: &str = &format!("{}/checkins", DB_BASE_URL);
-        let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
+        let url: String = format!("{}/checkins", DB_BASE_URL);
+        let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        let mut response: HyperResponse = match utils::post_request(url, body) {
+        let mut response: HyperResponse = match utils::post_request(&url, &body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -384,10 +384,10 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         status_code = 400;
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
-        let url: &str = &format!("{}/checkins", DB_BASE_URL);
-        let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
+        let url: String = format!("{}/checkins", DB_BASE_URL);
+        let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        let mut response: HyperResponse = match utils::delete_request(url, body) {
+        let mut response: HyperResponse = match utils::delete_request(&url, &body) {
             Ok(response) => response,
             Err(err) => {
                 let error = UserError::new(err);
@@ -427,9 +427,9 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
 /// # Output
 /// A Response with a JSON messsage and correct status code.
 pub fn rooms_handler(_: &mut Request) -> PencilResult {
-    let url: &str = &format!("{}/rooms", DB_BASE_URL);
+    let url: String = format!("{}/rooms", DB_BASE_URL);
 
-    let mut response: HyperResponse = match utils::get_request(url) {
+    let mut response: HyperResponse = match utils::get_request(&url) {
         Ok(response) => response,
         Err(err) => {
             let error = UserError::new(err);

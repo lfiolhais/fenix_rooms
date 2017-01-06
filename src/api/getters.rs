@@ -31,9 +31,9 @@ pub fn search_contained_spaces(name: &str,
         return Err(error);
     }
 
-    let url = &format!("{}/{}", FENIX_BASE_URL, fenix_id);
+    let url: String = format!("{}/{}", FENIX_BASE_URL, fenix_id);
 
-    let mut get_response = match utils::get_request(url) {
+    let mut get_response = match utils::get_request(&url) {
         Ok(response) => response,
         Err(err) => {
             return Err(UserError::new(err));
@@ -65,10 +65,10 @@ pub fn search_contained_spaces(name: &str,
 /// Result of the transaction with a Space and String tuple and a `UserError`.
 pub fn get_spaces_from_id(id: &str) -> Result<HyperResponse, UserError> {
     // Format URL
-    let url = &format!("{}/{}", FENIX_BASE_URL, id);
+    let url: String = format!("{}/{}", FENIX_BASE_URL, id);
 
     // Send GET request to the url
-    match utils::get_request(url) {
+    match utils::get_request(&url) {
         Ok(response) => Ok(response),
         Err(err) => Err(UserError::new(err)),
     }
