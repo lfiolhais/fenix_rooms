@@ -27,15 +27,35 @@ use super::DB_BASE_URL;
 /// read the contents and send it as JSON.
 pub fn spaces_handler(_: &mut Request) -> PencilResult {
     // Get all spaces from Fenix
-    match getters::get_spaces_from_id("") {
-        Ok(space) => {
-            // Build response and set content to JSON
-            let mut response = Response::from(space);
-            response.set_content_type("application/json");
-            Ok(response)
+    let mut get_response = match getters::get_spaces_from_id("") {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(PenUserError(err));
         }
-        Err(err) => Err(PenUserError(err)),
+    };
+
+    let buffer: String;
+    let status_code: u16;
+
+    if get_response.status == StatusCode::Ok {
+        buffer = match utils::read_response_body(&mut get_response) {
+            Ok(buf) => buf,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+        status_code = 200;
+    } else {
+        status_code = 503;
+        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
     }
+
+    // Build response and set content to JSON response
+    let mut response = Response::from(buffer);
+    response.set_content_type("application/json");
+    response.status_code = status_code;
+
+    Ok(response)
 }
 
 /// Handler for IDs using the `FenixEDU` API
@@ -58,30 +78,45 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
         // Perform GET request with id
-        let generic_space: String = match getters::get_spaces_from_id(id) {
-            Ok(data) => data,
+        let mut get_response = match getters::get_spaces_from_id(id) {
+            Ok(response) => response,
             Err(err) => {
                 return Err(PenUserError(err));
             }
         };
 
-        // Convert JSON to Object removing the unecessary fields in the process
-        let space: GenericSpace = match utils::from_json_to_obj(&generic_space) {
-            Ok(space) => space,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
+        if get_response.status == StatusCode::Ok {
+            let body = match utils::read_response_body(&mut get_response) {
+                Ok(buf) => buf,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
 
-        // Turn the simplified object back into JSON
-        buffer = match utils::from_obj_to_json(&space) {
-            Ok(json) => json,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
+            // Convert JSON to Object removing the unecessary fields in the process
+            let space: GenericSpace = match utils::from_json_to_obj(&body) {
+                Ok(space) => space,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
 
-        status_code = 200;
+            // Turn the simplified object back into JSON
+            buffer = match utils::from_obj_to_json(&space) {
+                Ok(json) => json,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
+
+            status_code = 200;
+        } else if get_response.status == StatusCode::NotFound {
+            status_code = 404;
+            buffer = "{\"error\": \"The id was not found\"}".to_owned();
+        } else {
+            status_code = 503;
+            buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
+        }
     }
 
     // Build response and set content to JSON response
@@ -119,8 +154,6 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/users", DB_BASE_URL);
         let body: &str = &format!("{{\"username\": \"{}\"}}", username);
 
-        println!("Body: {}", body);
-
         let mut response = match utils::post_request(url, body) {
             Ok(response) => response,
             Err(err) => {
@@ -128,13 +161,23 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
-            Ok(buffer) => buffer,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-        status_code = 200;
+
+        if response.status == StatusCode::Ok || response.status == StatusCode::Created {
+            status_code = 200;
+            buffer = match utils::read_response_body(&mut response) {
+                Ok(buffer) => buffer,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
+        } else if response.status == StatusCode::UnprocessableEntity {
+            status_code = 422;
+            buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+        } else {
+            status_code = 503;
+            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+        }
+
     }
 
     let mut response = Response::from(buffer);
@@ -195,8 +238,6 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                                       capacity,
                                       fenix_id);
 
-            println!("Body: {}", body);
-
             let mut response = match utils::post_request(url, body) {
                 Ok(response) => response,
                 Err(err) => {
@@ -205,13 +246,21 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                 }
             };
 
-            buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
-                Ok(buffer) => buffer,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            };
-            status_code = 200;
+            if response.status == StatusCode::Created || response.status == StatusCode::Ok {
+                buffer = match utils::read_response_body(&mut response) {
+                    Ok(buffer) => buffer,
+                    Err(err) => {
+                        return Err(PenUserError(UserError::new(err)));
+                    }
+                };
+                status_code = 200;
+            } else if response.status == StatusCode::UnprocessableEntity {
+                status_code = 422;
+                buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+            } else {
+                status_code = 503;
+                buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+            }
         }
 
         let mut response = Response::from(buffer);
@@ -222,7 +271,9 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
     }
 
     let mut response = Response::from("{ \"error\": \"Unauthorized access to DB\"}");
+    response.status_code = 401;
     response.set_content_type("application/json");
+
     Ok(response)
 }
 
@@ -257,8 +308,6 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        println!("Body: {}", body);
-
         let mut response = match utils::post_request(url, body) {
             Ok(response) => response,
             Err(err) => {
@@ -266,13 +315,22 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response, StatusCode::Created) {
-            Ok(buffer) => buffer,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-        status_code = 200;
+
+        if response.status == StatusCode::Created || response.status == StatusCode::Ok {
+            buffer = match utils::read_response_body(&mut response) {
+                Ok(buffer) => buffer,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
+            status_code = 200;
+        } else if response.status == StatusCode::UnprocessableEntity {
+            status_code = 422;
+            buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+        } else {
+            status_code = 503;
+            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+        }
     }
 
     let mut response = Response::from(buffer);
@@ -313,8 +371,6 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
 
-        println!("Body: {}", body);
-
         let mut response = match utils::delete_request(url, body) {
             Ok(response) => response,
             Err(err) => {
@@ -322,13 +378,25 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
                 return Err(PenUserError(error));
             }
         };
-        buffer = match utils::read_response_body(&mut response, StatusCode::NoContent) {
-            Ok(buffer) => buffer,
-            Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
-            }
-        };
-        status_code = 200;
+
+        // Deleting returns Ok or NoContent with no body
+        if response.status == StatusCode::NoContent || response.status == StatusCode::Ok {
+            status_code = 200;
+            buffer = "".to_owned();
+        } else if response.status == StatusCode::NotFound {
+            // The resource asked to delete was not found
+            status_code = 404;
+            buffer = match utils::read_response_body(&mut response) {
+                Ok(buffer) => buffer,
+                Err(err) => {
+                    return Err(PenUserError(UserError::new(err)));
+                }
+            };
+        } else {
+            // The database had an error
+            status_code = 503;
+            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+        }
     }
 
     let mut response = Response::from(buffer);
@@ -353,16 +421,27 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         }
     };
 
-    match utils::read_response_body(&mut response, StatusCode::Ok) {
-        Ok(buffer) => {
-            let mut response = Response::from(buffer);
-            response.set_content_type("application/json");
-            response.status_code = 200;
-            Ok(response)
-        }
-        Err(err) => Err(PenUserError(UserError::new(err))),
+    let buffer: String;
+    let status_code: u16;
+
+    if response.status == StatusCode::Ok {
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+        status_code = 200;
+    } else {
+        status_code = 503;
+        buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
     }
 
+    let mut response = Response::from(buffer);
+    response.set_content_type("application/json");
+    response.status_code = status_code;
+
+    Ok(response)
 }
 
 /// Translate the id's to names
@@ -385,17 +464,32 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     };
 
     // Get all spaces from Fenix
-    let spaces: Space = match getters::get_spaces_from_id("") {
-        Ok(spaces) => {
-            match utils::from_json_to_obj(&spaces) {
-                Ok(obj) => obj,
-                Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
-                }
-            }
-        }
+    let mut get_response = match getters::get_spaces_from_id("") {
+        Ok(response) => response,
         Err(err) => {
             return Err(PenUserError(err));
+        }
+    };
+
+    let spaces: Space;
+    let buffer: String;
+
+    if get_response.status == StatusCode::Ok {
+        buffer = match utils::read_response_body(&mut get_response) {
+            Ok(buf) => buf,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+    } else {
+        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
+    }
+
+    spaces = match utils::from_json_to_obj(&buffer) {
+        Ok(obj) => obj,
+        Err(err) => {
+            return Err(PenUserError(UserError::new(err)));
         }
     };
 

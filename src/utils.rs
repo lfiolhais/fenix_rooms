@@ -5,7 +5,6 @@ extern crate serde;
 
 use std::io::Read;
 use self::serde::{Serialize, Deserialize};
-use self::hyper::status::StatusCode;
 use self::hyper::client::{Client, Response};
 use self::hyper::header::{Headers, ContentType};
 use self::hyper::mime::{Mime, TopLevel, SubLevel, Attr, Value};
@@ -87,37 +86,30 @@ pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
 
 /// Reads the body of the response request and returns it
 ///
-/// The response body is read when the request has the specified status code.
+/// The response body is read.
 ///
 /// # Arguments
 /// * `response` => The response received from the request performed.
-/// * `status` => The expected `StatusCode`.
 ///
 /// # Return Value
 /// The contents of the body or a error message.
-pub fn read_response_body(response: &mut Response, status: StatusCode) -> Result<String, String> {
-    if response.status == status {
-        // Read content from response and write it to a buffer
-        let mut buf: String = String::new();
-        let read_size = match response.read_to_string(&mut buf) {
-            Ok(size) => size,
-            Err(err) => {
-                let error = format!("Problem while reading message body: {}", err);
-                return Err(error);
-            }
-        };
-
-        if read_size != 0 {
-            Ok(buf)
-        } else {
-            let error = format!("{{ \"error\": \"{} did not return any information\" }}",
-                                response.url);
-            Ok(error)
+pub fn read_response_body(response: &mut Response) -> Result<String, String> {
+    // Read content from response and write it to a buffer
+    let mut buf: String = String::new();
+    let read_size = match response.read_to_string(&mut buf) {
+        Ok(size) => size,
+        Err(err) => {
+            let error = format!("Problem while reading message body: {}", err);
+            return Err(error);
         }
+    };
+
+    if read_size != 0 {
+        Ok(buf)
     } else {
-        Ok(format!("{{ \"error\": \"The server in {} returned {}\" }}",
-                   response.url,
-                   response.status))
+        let error = format!("{{ \"error\": \"{} did not return any information\" }}",
+                            response.url);
+        Err(error)
     }
 }
 
