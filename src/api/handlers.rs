@@ -50,33 +50,44 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         None => "",
     };
 
-    // Perform GET request with id
-    let generic_space: String = match getters::get_spaces_from_id(id) {
-        Ok(data) => data,
-        Err(err) => {
-            return Err(PenUserError(err));
-        }
-    };
+    let status_code: u16;
+    let buffer: String;
 
-    // Convert JSON to Object removing the unecessary fields in the process
-    let space: GenericSpace = match utils::from_json_to_obj(&generic_space) {
-        Ok(space) => space,
-        Err(err) => {
-            return Err(PenUserError(UserError::new(err)));
-        }
-    };
+    if id.is_empty() {
+        status_code = 400;
+        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
+    } else {
+        // Perform GET request with id
+        let generic_space: String = match getters::get_spaces_from_id(id) {
+            Ok(data) => data,
+            Err(err) => {
+                return Err(PenUserError(err));
+            }
+        };
 
-    // Turn the simplified object back into JSON
-    let generic_space_contained_spaces_serialized: String = match utils::from_obj_to_json(&space) {
-        Ok(json) => json,
-        Err(err) => {
-            return Err(PenUserError(UserError::new(err)));
-        }
-    };
+        // Convert JSON to Object removing the unecessary fields in the process
+        let space: GenericSpace = match utils::from_json_to_obj(&generic_space) {
+            Ok(space) => space,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+        // Turn the simplified object back into JSON
+        buffer = match utils::from_obj_to_json(&space) {
+            Ok(json) => json,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
+
+        status_code = 200;
+    }
 
     // Build response and set content to JSON response
-    let mut response = Response::from(generic_space_contained_spaces_serialized);
+    let mut response = Response::from(buffer);
     response.set_content_type("application/json");
+    response.status_code = status_code;
 
     Ok(response)
 }
@@ -102,8 +113,8 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
     let buffer: String;
 
     if username.is_empty() {
-        status_code = 204;
-        buffer = "One of the necessary arguments wasn't provided".to_owned();
+        status_code = 400;
+        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
         let url: &str = &format!("{}/users", DB_BASE_URL);
         let body: &str = &format!("{{\"username\": \"{}\"}}", username);
@@ -174,8 +185,8 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         let buffer: String;
 
         if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
-            status_code = 204;
-            buffer = "One of the necessary arguments wasn't provided".to_owned();
+            status_code = 400;
+            buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
         } else {
             let url: &str = &format!("{}/rooms", DB_BASE_URL);
             let body: &str = &format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
@@ -240,8 +251,8 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
     let buffer: String;
 
     if room_id.is_empty() || user_id.is_empty() {
-        status_code = 204;
-        buffer = "One of the necessary arguments wasn't provided".to_owned();
+        status_code = 400;
+        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
@@ -273,7 +284,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
 
 /// Checks out in the Database
 ///
-/// The check out is performed with a `room_id` and a `user_id`. Then, a POST
+/// The check out is performed with a `room_id` and a `user_id`. Then, a DELETE
 /// request is sent and its content read and sent to the client.
 ///
 /// # Arguments
@@ -296,8 +307,8 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
     let buffer: String;
 
     if room_id.is_empty() || user_id.is_empty() {
-        status_code = 204;
-        buffer = "One of the necessary arguments wasn't provided".to_owned();
+        status_code = 400;
+        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
     } else {
         let url: &str = &format!("{}/checkins", DB_BASE_URL);
         let body: &str = &format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
