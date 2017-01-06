@@ -281,10 +281,20 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         };
     } else if response.status == StatusCode::UnprocessableEntity {
         status_code = 422;
-        buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
     } else if response.status == StatusCode::NotFound {
         status_code = 404;
-        buffer = "{\"error\": \"The arguments weren't found in the database\"}".to_owned();
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Err(PenUserError(UserError::new(err)));
+            }
+        };
     } else {
         status_code = 503;
         buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
