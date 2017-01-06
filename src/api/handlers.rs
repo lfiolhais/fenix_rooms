@@ -123,11 +123,11 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
             response.set_content_type("application/json");
             response.status_code = 400;
 
-            Ok(response)
+            return Ok(response);
         }
     };
 
-    process_id::<GenericSpace>(&id)
+    process_id::<GenericSpace>(id)
 }
 
 /// Creates a User in the Database
