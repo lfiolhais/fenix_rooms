@@ -45,7 +45,7 @@ mod misc {
     use super::hyper::status::StatusCode;
     use super::{getters, GenericSpace};
 
-    /// Checks in the FenixEDU API if the space with id `id` exists. A space is
+    /// Checks in the `FenixEDU` API if the space with id `id` exists. A space is
     /// considered a room when the parameter `contained_spaces` is empty.
     ///
     /// # Arguments

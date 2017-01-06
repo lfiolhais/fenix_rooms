@@ -123,7 +123,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
             response.set_content_type("application/json");
             response.status_code = 400;
 
-            return Ok(response);
+            Ok(response)
         }
     }
 }
