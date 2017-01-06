@@ -77,7 +77,7 @@ fn process_id<T>(id: &str) -> PencilResult
     } else if get_response.status == StatusCode::NotFound {
         // When the id is not valid warn the user
         status_code = 404;
-        buffer = "{\"error\": \"The id was not found\"}".to_owned();
+        buffer = format!("{\"error\": \"The id: {} was not found\"}", id);
     } else {
         // When the `FenixEDU` servers are down warn the user
         status_code = 503;
