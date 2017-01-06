@@ -41,6 +41,7 @@ fn process_id<T>(id: &str) -> PencilResult
     let buffer: String;
     let status_code: u16;
 
+    // If the GET request is successful read the body and process the request
     if get_response.status == StatusCode::Ok {
         let body: String = match utils::read_response_body(&mut get_response) {
             Ok(buf) => buf,
@@ -67,9 +68,11 @@ fn process_id<T>(id: &str) -> PencilResult
 
         status_code = 200;
     } else if get_response.status == StatusCode::NotFound {
+        // When the id is not valid warn the user
         status_code = 404;
         buffer = "{\"error\": \"The id was not found\"}".to_owned();
     } else {
+        // When the `FenixEDU` servers are down warn the user
         status_code = 503;
         buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
     }
@@ -101,7 +104,10 @@ pub fn spaces_handler(_: &mut Request) -> PencilResult {
     process_id::<Space>("")
 }
 
-/// Handler for IDs using the `FenixEDU` API
+/// Handler for IDs using the `FenixEDU` API. The id sent in the url will be processed.
+///
+/// # Arguments
+/// * `id` => id to process
 ///
 /// # Return Value
 /// Error if the `get_spaces_from_id()` fails. Otherwise read the contents and
@@ -112,8 +118,8 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
         Some(id) => id as &str,
         None => {
             // Build response and set content to JSON response
-            let mut response = PencilResponse::from("{\"error\": \"One of the necessary \
-                                                     arguments wasn't provided\"}");
+            let mut response = PencilResponse::from("{\"error\": \"The id \
+                                                     wasn't provided\"}");
             response.set_content_type("application/json");
             response.status_code = 400;
 
