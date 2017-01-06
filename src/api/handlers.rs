@@ -6,7 +6,7 @@ use super::hyper::status::StatusCode;
 use super::pencil::{Request, Response, PencilResult};
 use super::pencil::{UserError, PenUserError};
 use super::{GenericSpace, Space};
-use super::getters;
+use super::{getters, misc};
 use utils;
 use super::DB_BASE_URL;
 
@@ -201,7 +201,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 pub fn create_room_handler(request: &mut Request) -> PencilResult {
     // Get the id and capacity from the body of the request if they exists. I
     // need to clone the parameter because Pencil returns a reference to the
-    // Struct and doesn't allow me consume the contents of the form. We are
+    // Struct and doesn't allow me to consume the contents of the form. We are
     // essentially wasting memory.
     let location: String = match request.form().get("location") {
         Some(location) => location.clone(),
@@ -238,28 +238,41 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
                                       capacity,
                                       fenix_id);
 
-            let mut response = match utils::post_request(url, body) {
-                Ok(response) => response,
+            let room_exists: bool = match misc::does_room_exist(&fenix_id) {
+                Ok(room_exists) => room_exists,
                 Err(err) => {
-                    let error = UserError::new(err);
-                    return Err(PenUserError(error));
+                    return Err(PenUserError(err));
                 }
             };
 
-            if response.status == StatusCode::Created || response.status == StatusCode::Ok {
-                buffer = match utils::read_response_body(&mut response) {
-                    Ok(buffer) => buffer,
+            if room_exists {
+                let mut response = match utils::post_request(url, body) {
+                    Ok(response) => response,
                     Err(err) => {
-                        return Err(PenUserError(UserError::new(err)));
+                        let error = UserError::new(err);
+                        return Err(PenUserError(error));
                     }
                 };
-                status_code = 200;
-            } else if response.status == StatusCode::UnprocessableEntity {
-                status_code = 422;
-                buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+
+                if response.status == StatusCode::Created || response.status == StatusCode::Ok {
+                    buffer = match utils::read_response_body(&mut response) {
+                        Ok(buffer) => buffer,
+                        Err(err) => {
+                            return Err(PenUserError(UserError::new(err)));
+                        }
+                    };
+                    status_code = 200;
+                } else if response.status == StatusCode::UnprocessableEntity {
+                    status_code = 422;
+                    buffer = "{\"error\": \"The entity already exists\"}".to_owned();
+                } else {
+                    status_code = 503;
+                    buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+                }
             } else {
-                status_code = 503;
-                buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+                status_code = 404;
+                buffer = "{ \"error\" : \"The provided id does not match a space in FenixEDU\"}"
+                    .to_owned();
             }
         }
 
@@ -329,7 +342,7 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
             buffer = "{\"error\": \"The entity already exists\"}".to_owned();
         } else if response.status == StatusCode::NotFound {
             status_code = 404;
-            buffer = "{\"error\": \"The user_id provided was not found\"}".to_owned();
+            buffer = "{\"error\": \"The user_id or room_id provided was not found\"}".to_owned();
         } else {
             status_code = 503;
             buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
@@ -453,7 +466,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
 /// hierarchically. Previously `/api/id/<id>` and now
 /// `/api/path/level1/level2/level3`. Keep in mind that by increasing the amount
 /// of levels in the path the more GET requests are made. The response time is
-/// now dependent on the responsiveness of the FenixEDU API. Also this might
+/// now dependent on the responsiveness of the `FenixEDU` API. Also this might
 /// cause a mini DDOS.
 ///
 /// # Output

@@ -56,7 +56,7 @@ pub fn search_contained_spaces(name: &str,
     Ok(body)
 }
 
-/// Send a GET request to FenixEDU with the specified space `id`.
+/// Send a GET request to `FenixEDU` with the specified space `id`.
 ///
 /// # Arguments
 /// * `id` => space id.
