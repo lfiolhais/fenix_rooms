@@ -41,7 +41,7 @@ fn process_id<T>(id: &str) -> PencilResult
     let mut get_response: HyperResponse = match getters::get_spaces_from_id(id) {
         Ok(response) => response,
         Err(err) => {
-            return Ok(misc::build_response(500, &err.desc));
+            return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err.desc)));
         }
     };
 
@@ -53,7 +53,7 @@ fn process_id<T>(id: &str) -> PencilResult
         let body: String = match utils::read_response_body(&mut get_response) {
             Ok(buf) => buf,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
 
@@ -61,7 +61,7 @@ fn process_id<T>(id: &str) -> PencilResult
         let space: T = match utils::from_json_to_obj(&body) {
             Ok(space) => space,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
 
@@ -69,7 +69,7 @@ fn process_id<T>(id: &str) -> PencilResult
         buffer = match utils::from_obj_to_json(&space) {
             Ok(json) => json,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
 
@@ -145,7 +145,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
         Ok(response) => response,
         Err(err) => {
-            return Ok(misc::build_response(500, &err.desc));
+            return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err.desc)));
         }
     };
 
@@ -154,7 +154,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
         match utils::read_response_body(&mut get_response) {
             Ok(buf) => buf,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         }
     } else {
@@ -164,7 +164,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     spaces = match utils::from_json_to_obj(&buffer) {
         Ok(obj) => obj,
         Err(err) => {
-            return Ok(misc::build_response(500, &err));
+            return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
         }
     };
 
@@ -191,12 +191,13 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
                 match utils::from_json_to_obj(&body) {
                     Ok(spaces) => spaces,
                     Err(err) => {
-                        return Ok(misc::build_response(500, &err));
+                        return Ok(misc::build_response(500,
+                                                       &format!("{{ \"error\": \"{}\" }}", err)));
                     }
                 }
             }
             Err(err) => {
-                return Ok(misc::build_response(500, &err.desc));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err.desc)));
             }
         };
 
@@ -206,7 +207,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     // Convert Object to JSON
     match utils::from_obj_to_json(&my_space) {
         Ok(json) => Ok(misc::build_response(200, &json)),
-        Err(err) => Ok(misc::build_response(500, &err)),
+        Err(err) => Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err))),
     }
 }
 
@@ -233,7 +234,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
     let mut response: HyperResponse = match utils::post_request(url, body) {
         Ok(response) => response,
         Err(err) => {
-            return Ok(misc::build_response(500, &err));
+            return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
         }
     };
 
@@ -245,7 +246,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
     } else if response.status == StatusCode::UnprocessableEntity {
@@ -253,7 +254,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
     } else if response.status == StatusCode::NotFound {
@@ -261,7 +262,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
     } else {
@@ -296,8 +297,8 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 
 /// Creates a Room in the Database
 ///
-/// Create a room in the database with the specified `id`, `capacity`,
-/// `location` and `admin_id` in the body. Only the admin can create rooms in
+/// Create a room in the database with the specified `fenix_id`, `capacity`,
+/// `location` and `user_id` in the body. Only the admin can create rooms in
 /// the DB.
 ///
 /// # Arguments
@@ -325,42 +326,42 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         None => "".to_owned(),
     };
 
-    let admin_id: String = match request.form().get("admin_id") {
-        Some(admin_id) => admin_id.clone(),
+    let user_id: String = match request.form().get("user_id") {
+        Some(user_id) => user_id.clone(),
         None => "".to_owned(),
     };
 
+    if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() || user_id.is_empty() {
+        return Ok(misc::build_response(400,
+                                       "{\"error\": \"One of the necessary arguments wasn't \
+                                        provided\"}"));
+    }
+
     // Default to Unauthorized.
     let mut status_code: u16 = 401;
-    let mut buffer: String = "{ \"error\": \"Unauthorized access to DB\"}".to_owned();
+    let mut buffer: String = "{ \"error\": \"Unauthorized access to database\"}".to_owned();
 
-    if admin_id == "0" {
-        if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() {
-            status_code = 400;
-            buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
-        } else {
-            let url: String = format!("{}/rooms", DB_BASE_URL);
-            let body: String = format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": \
-                                       {}}}",
-                                       location,
-                                       capacity,
-                                       fenix_id);
+    if user_id == "0" {
+        let url: String = format!("{}/rooms", DB_BASE_URL);
+        let body: String = format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": {}}}",
+                                   location,
+                                   capacity,
+                                   fenix_id);
 
-            let room_exists: bool = match misc::is_room(&fenix_id) {
-                Ok(room_exists) => room_exists,
-                Err(err) => {
-                    return Ok(misc::build_response(500, &err.desc));
-                }
-            };
-
-            if room_exists {
-                return create_entity(&url, &body);
-            } else {
-                status_code = 404;
-                buffer = "{ \"error\" : \"The provided fenix_id does not match a space in \
-                          FenixEDU\"}"
-                    .to_owned();
+        let room_exists: bool = match misc::is_room(&fenix_id) {
+            Ok(room_exists) => room_exists,
+            Err(err) => {
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err.desc)));
             }
+        };
+
+        if room_exists {
+            return create_entity(&url, &body);
+        } else {
+            status_code = 404;
+            buffer = "{ \"error\" : \"The provided fenix_id does not match a space or room in \
+                      FenixEDU\"}"
+                .to_owned();
         }
     }
 
@@ -432,7 +433,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         let mut response: HyperResponse = match utils::delete_request(&url, &body) {
             Ok(response) => response,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
 
@@ -446,7 +447,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
             buffer = match utils::read_response_body(&mut response) {
                 Ok(buffer) => buffer,
                 Err(err) => {
-                    return Ok(misc::build_response(500, &err));
+                    return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
                 }
             };
         } else {
@@ -469,7 +470,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
     let mut response: HyperResponse = match utils::get_request(&url) {
         Ok(response) => response,
         Err(err) => {
-            return Ok(misc::build_response(500, &err));
+            return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
         }
     };
 
@@ -480,7 +481,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Ok(misc::build_response(500, &err));
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
         status_code = 200;

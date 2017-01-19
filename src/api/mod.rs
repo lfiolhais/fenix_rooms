@@ -13,8 +13,8 @@ pub struct GenericSpace {
     name: String,
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
-    #[serde(default)]
-    capacity: Capacity,
+    #[serde(skip_serializing_if="Option::is_none")]
+    capacity: Option<Capacity>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
