@@ -9,7 +9,7 @@ use utils;
 use serde::{Serialize, Deserialize};
 use super::hyper::status::StatusCode;
 use super::hyper::client::Response as HyperResponse;
-use super::pencil::{Request, Response as PencilResponse, PencilResult, UserError, PenUserError};
+use super::pencil::{Request, PencilResult};
 
 use super::DB_BASE_URL;
 use super::{GenericSpace, Space};
@@ -41,7 +41,7 @@ fn process_id<T>(id: &str) -> PencilResult
     let mut get_response: HyperResponse = match getters::get_spaces_from_id(id) {
         Ok(response) => response,
         Err(err) => {
-            return Err(PenUserError(err));
+            return Ok(misc::build_response(500, &err.desc));
         }
     };
 
@@ -53,7 +53,7 @@ fn process_id<T>(id: &str) -> PencilResult
         let body: String = match utils::read_response_body(&mut get_response) {
             Ok(buf) => buf,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
 
@@ -61,7 +61,7 @@ fn process_id<T>(id: &str) -> PencilResult
         let space: T = match utils::from_json_to_obj(&body) {
             Ok(space) => space,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
 
@@ -69,7 +69,7 @@ fn process_id<T>(id: &str) -> PencilResult
         buffer = match utils::from_obj_to_json(&space) {
             Ok(json) => json,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
 
@@ -77,19 +77,14 @@ fn process_id<T>(id: &str) -> PencilResult
     } else if get_response.status == StatusCode::NotFound {
         // When the id is not valid warn the user
         status_code = 404;
-        buffer = format!("{\"error\": \"The id: {} was not found\"}", id);
+        buffer = format!("{{\"error\": \"The id: {} was not found\"}}", id);
     } else {
         // When the `FenixEDU` servers are down warn the user
         status_code = 503;
-        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
+        buffer = "{{\"error\": \"Fenix had an error\"}}".to_owned();
     }
 
-    // Build response and set content to JSON response
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
+    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Handler for the top level spaces at IST
@@ -123,15 +118,7 @@ pub fn id_handler(request: &mut Request) -> PencilResult {
     // Get ID from request
     match request.view_args.get("id") {
         Some(id) => process_id::<GenericSpace>(id),
-        None => {
-            // Build response and set content to JSON response
-            let mut response = PencilResponse::from("{\"error\": \"The id \
-                                                     wasn't provided\"}");
-            response.set_content_type("application/json");
-            response.status_code = 400;
-
-            Ok(response)
-        }
+        None => Ok(misc::build_response(400, "{\"error\": \"The id wasn't provided\"}")),
     }
 }
 
@@ -150,7 +137,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     let path: String = match request.view_args.get("my_path") {
         Some(path) => path.to_owned(),
         None => {
-            return Err(PenUserError(UserError::new("No path provided")));
+            return Ok(misc::build_response(400, "No path provided"));
         }
     };
 
@@ -158,29 +145,26 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     let mut get_response: HyperResponse = match getters::get_spaces_from_id("") {
         Ok(response) => response,
         Err(err) => {
-            return Err(PenUserError(err));
+            return Ok(misc::build_response(500, &err.desc));
         }
     };
 
     let spaces: Space;
-    let buffer: String;
-
-    if get_response.status == StatusCode::Ok {
-        buffer = match utils::read_response_body(&mut get_response) {
+    let buffer: String = if get_response.status == StatusCode::Ok {
+        match utils::read_response_body(&mut get_response) {
             Ok(buf) => buf,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
-        };
-
+        }
     } else {
-        buffer = "{\"error\": \"Fenix had an error\"}".to_owned();
-    }
+        "{\"error\": \"Fenix had an error\"}".to_owned()
+    };
 
     spaces = match utils::from_json_to_obj(&buffer) {
         Ok(obj) => obj,
         Err(err) => {
-            return Err(PenUserError(UserError::new(err)));
+            return Ok(misc::build_response(500, &err));
         }
     };
 
@@ -195,32 +179,24 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
                 let body: String = match result {
                     SearchResult::Ok(body) => body,
                     SearchResult::NotFound(msg) => {
-                        // Build Response
-                        let mut response = PencilResponse::from(format!("{{\"error\": \"{}\"}}",
-                                                                        msg));
-                        response.set_content_type("application/json");
-                        response.status_code = 404;
-                        return Ok(response);
+                        return Ok(misc::build_response(404,
+                                                       &format!("{{\"error\": \"{}\"}}", msg)));
                     }
                     SearchResult::Error(msg) => {
-                        // Build Response
-                        let mut response = PencilResponse::from(format!("{{\"error\": \"{}\"}}",
-                                                                        msg));
-                        response.set_content_type("application/json");
-                        response.status_code = 503;
-                        return Ok(response);
+                        return Ok(misc::build_response(404,
+                                                       &format!("{{\"error\": \"{}\"}}", msg)));
                     }
                 };
 
                 match utils::from_json_to_obj(&body) {
                     Ok(spaces) => spaces,
                     Err(err) => {
-                        return Err(PenUserError(UserError::new(err)));
+                        return Ok(misc::build_response(500, &err));
                     }
                 }
             }
             Err(err) => {
-                return Err(PenUserError(err));
+                return Ok(misc::build_response(500, &err.desc));
             }
         };
 
@@ -229,14 +205,8 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
 
     // Convert Object to JSON
     match utils::from_obj_to_json(&my_space) {
-        Ok(json) => {
-            // Build Response
-            let mut response = PencilResponse::from(json);
-            response.set_content_type("application/json");
-            response.status_code = 200;
-            Ok(response)
-        }
-        Err(err) => Err(PenUserError(UserError::new(err))),
+        Ok(json) => Ok(misc::build_response(200, &json)),
+        Err(err) => Ok(misc::build_response(500, &err)),
     }
 }
 
@@ -260,11 +230,10 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
 /// # Return Value
 /// The JSON message processed or an error.
 fn create_entity(url: &str, body: &str) -> PencilResult {
-    let mut response: HyperResponse = match utils::post_request(&url, &body) {
+    let mut response: HyperResponse = match utils::post_request(url, body) {
         Ok(response) => response,
         Err(err) => {
-            let error = UserError::new(err);
-            return Err(PenUserError(error));
+            return Ok(misc::build_response(500, &err));
         }
     };
 
@@ -276,7 +245,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
     } else if response.status == StatusCode::UnprocessableEntity {
@@ -284,7 +253,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
     } else if response.status == StatusCode::NotFound {
@@ -292,7 +261,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
     } else {
@@ -300,11 +269,7 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
         buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
     }
 
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
+    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Creates a User in the Database
@@ -325,14 +290,7 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
             let body: String = format!("{{\"username\": \"{}\"}}", username);
             create_entity(&url, &body)
         }
-        None => {
-            let mut response = PencilResponse::from("{\"error\": \"username \
-                                                     wasn't provided\"}");
-            response.set_content_type("application/json");
-            response.status_code = 400;
-
-            Ok(response)
-        }
+        None => Ok(misc::build_response(400, "{\"error\": \"username wasn't provided\"}")),
     }
 }
 
@@ -391,7 +349,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
             let room_exists: bool = match misc::is_room(&fenix_id) {
                 Ok(room_exists) => room_exists,
                 Err(err) => {
-                    return Err(PenUserError(err));
+                    return Ok(misc::build_response(500, &err.desc));
                 }
             };
 
@@ -406,11 +364,7 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
         }
     }
 
-    let mut response = PencilResponse::from(buffer);
-    response.status_code = status_code;
-    response.set_content_type("application/json");
-
-    Ok(response)
+    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Checks in in the Database
@@ -435,12 +389,8 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
     };
 
     if room_id.is_empty() || user_id.is_empty() {
-        let mut response = PencilResponse::from("{\"error\": \"One of the necessary arguments \
-                                                 wasn't provided\"}");
-        response.set_content_type("application/json");
-        response.status_code = 400;
-
-        Ok(response)
+        Ok(misc::build_response(400,
+                                "{\"error\": \"One of the necessary arguments wasn't provided\"}"))
     } else {
         let url: String = format!("{}/checkins", DB_BASE_URL);
         let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
@@ -482,8 +432,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         let mut response: HyperResponse = match utils::delete_request(&url, &body) {
             Ok(response) => response,
             Err(err) => {
-                let error = UserError::new(err);
-                return Err(PenUserError(error));
+                return Ok(misc::build_response(500, &err));
             }
         };
 
@@ -497,7 +446,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
             buffer = match utils::read_response_body(&mut response) {
                 Ok(buffer) => buffer,
                 Err(err) => {
-                    return Err(PenUserError(UserError::new(err)));
+                    return Ok(misc::build_response(500, &err));
                 }
             };
         } else {
@@ -507,11 +456,7 @@ pub fn check_out_handler(request: &mut Request) -> PencilResult {
         }
     }
 
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
+    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Gets the list of rooms in the Database
@@ -524,8 +469,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
     let mut response: HyperResponse = match utils::get_request(&url) {
         Ok(response) => response,
         Err(err) => {
-            let error = UserError::new(err);
-            return Err(PenUserError(error));
+            return Ok(misc::build_response(500, &err));
         }
     };
 
@@ -536,7 +480,7 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         buffer = match utils::read_response_body(&mut response) {
             Ok(buffer) => buffer,
             Err(err) => {
-                return Err(PenUserError(UserError::new(err)));
+                return Ok(misc::build_response(500, &err));
             }
         };
         status_code = 200;
@@ -545,9 +489,5 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
         buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
     }
 
-    let mut response = PencilResponse::from(buffer);
-    response.set_content_type("application/json");
-    response.status_code = status_code;
-
-    Ok(response)
+    Ok(misc::build_response(status_code, &buffer))
 }

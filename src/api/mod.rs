@@ -5,8 +5,6 @@
 extern crate pencil;
 extern crate hyper;
 
-use std::collections::HashMap;
-
 // ///////////////////////////////////////////////////////////
 // Basic Structs
 // ///////////////////////////////////////////////////////////
@@ -16,13 +14,18 @@ pub struct GenericSpace {
     #[serde(rename="containedSpaces")]
     contained_spaces: Vec<ContainedSpace>,
     #[serde(default)]
-    capacity: HashMap<String, u64>,
+    capacity: Capacity,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ContainedSpace {
     id: String,
     name: String,
+}
+
+#[derive(Default, Deserialize, Serialize)]
+pub struct Capacity {
+    normal: u64,
 }
 
 type Space = Vec<ContainedSpace>;
@@ -56,7 +59,7 @@ const DB_BASE_URL: &'static str = "https://asint-project.herokuapp.com";
 pub mod handlers;
 mod getters;
 mod misc {
-    use api::pencil::UserError;
+    use api::pencil::{Response as PencilResponse, UserError};
     use utils::{from_json_to_obj, read_response_body};
 
     use super::hyper::status::StatusCode;
@@ -83,13 +86,7 @@ mod misc {
                 };
 
                 let is_room: bool = match from_json_to_obj::<GenericSpace>(&json) {
-                    Ok(obj) => {
-                        if obj.contained_spaces.is_empty() {
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                    Ok(obj) => obj.contained_spaces.is_empty(),
                     Err(_) => false,
                 };
 
@@ -101,5 +98,22 @@ mod misc {
             }
             Err(err) => Err(err),
         }
+    }
+
+    /// Build a Response from the provided message and status code
+    ///
+    /// # Arguments
+    /// * `status_code` => the status code of the response
+    /// * `msg` => message to be sent to the response
+    ///
+    /// # Return Value
+    /// The response built with the specified parameters
+    pub fn build_response(status_code: u16, msg: &str) -> PencilResponse {
+        // Build response and set content to JSON response
+        let mut response = PencilResponse::from(msg);
+        response.set_content_type("application/json");
+        response.status_code = status_code;
+
+        response
     }
 }
