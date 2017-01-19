@@ -137,7 +137,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
     let path: String = match request.view_args.get("my_path") {
         Some(path) => path.to_owned(),
         None => {
-            return Ok(misc::build_response(400, "No path provided"));
+            return Ok(misc::build_response(400, "{\"error\": \"No path provided\"}"));
         }
     };
 
@@ -183,7 +183,7 @@ pub fn path_handler(request: &mut Request) -> PencilResult {
                                                        &format!("{{\"error\": \"{}\"}}", msg)));
                     }
                     SearchResult::Error(msg) => {
-                        return Ok(misc::build_response(404,
+                        return Ok(misc::build_response(503,
                                                        &format!("{{\"error\": \"{}\"}}", msg)));
                     }
                 };
