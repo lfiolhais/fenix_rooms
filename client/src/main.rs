@@ -14,13 +14,14 @@ use fenix_rooms::api::GenericSpace;
 
 use std::fs::File;
 use std::io::Write;
+use std::env::current_dir;
 
-const DEFAULT_CONFIG_TOML: &'static str = r#"
-    [session]
-    server_url = "https://fenix-rooms.herokuapp.com"
-    user_id = ""
-    username = ""
-"#;
+const DEFAULT_CONFIG_TOML: &'static str =
+    "[session]
+server_url = \"https://fenix-rooms.herokuapp.com\"
+user_id = \"\"
+username = \"\"
+";
 
 fn main() {
     // Build CLI parser
@@ -33,6 +34,8 @@ fn main() {
         // Assume that if the open file fails the file doesn't exist.
         // Create file and write defaults
         Err(_) => {
+            println!("Creating configuration default at {:#?}",
+                     current_dir().unwrap());
             let mut new_file: File = match File::create("fenix-rooms-user.toml") {
                 Ok(new_file) => new_file,
                 Err(err) => panic!("Failed to create file fenix-rooms-user.toml with: {}", err),
