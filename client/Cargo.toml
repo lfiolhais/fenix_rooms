@@ -1,0 +1,9 @@
+[package]
+name = "client"
+version = "0.1.0"
+authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
+
+[dependencies]
+fenix_rooms = { path = ".." }
+clap = {version = "2.0.0", features = ["yaml"]}
+toml = "0.2.1"

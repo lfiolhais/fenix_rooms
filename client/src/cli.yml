@@ -1,0 +1,45 @@
+name: fenix-rooms
+version: "1.0"
+author: Luís Fiolhais <luis.azenhas.fiolhais@tecnico.ulisboa.pt>
+about: A Rust CLI client for the Fenix Rooms web service
+args:
+  - login:
+      short: l
+      long: login
+      help: Logs in the user and stores the session in fenix-rooms-user.toml
+  - check-in:
+      short: ci
+      long: check-in
+      value_name: ROOM
+      help: Checks user in into a specified room
+      takes_value: true
+  - check-out:
+      short: co
+      long: check-out
+      value_name: ROOM
+      help: Checks user out of a specified room
+      takes_value: true
+  - rooms:
+      short: r
+      long: rooms
+      help: Displays the rooms available in the database
+  - spaces:
+      short: s
+      long: spaces
+      help: Displays all the top level spaces with their respective id
+  - id:
+      short: id
+      long: id
+      value_name: ID
+      help: Get space with the specified ID
+  - path:
+      short: p
+      long: path
+      value_name: PATH
+      help: Get space with the specified path
+  - create-room:
+      short: cr
+      long: create-room
+      value_name: ROOM
+      help: Creates a room in the database
+      takes_value: true
