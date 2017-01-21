@@ -265,6 +265,14 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
                 return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
+    } else if response.status == StatusCode::BadRequest {
+        status_code = 400;
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
+            }
+        };
     } else {
         status_code = 503;
         buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
