@@ -6,4 +6,4 @@ authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
 [dependencies]
 fenix_rooms = { path = ".." }
 clap = { version = "~2.19.0", features = ["yaml"] }
-toml = "0.2.1"
+toml = { version = "0.2.1", features = ["serde"] }
