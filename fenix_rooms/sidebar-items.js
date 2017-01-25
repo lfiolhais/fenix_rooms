@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["api","REST API to interact with `FenixEDU` Spaces API"],["utils","Utilities needed for a client."]]});

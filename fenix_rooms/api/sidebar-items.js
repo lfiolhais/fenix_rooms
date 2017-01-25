@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["SearchResult","Possible search results when searching for a name in the contained spaces parameter"]],"mod":[["handlers","Handlers for the REST API"]],"struct":[["Capacity",""],["ContainedSpace",""],["GenericSpace",""]]});
