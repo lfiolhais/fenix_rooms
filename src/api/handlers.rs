@@ -291,15 +291,38 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-pub fn create_user_handler(request: &mut Request) -> PencilResult {
-    // Get the username from the body of the request if it exists
-    match request.form().get("username") {
-        Some(username) => {
-            let url: String = format!("{}/users", DB_BASE_URL);
-            let body: String = format!("{{\"username\": \"{}\"}}", username);
-            create_entity(&url, &body)
+pub fn create_user_handler(mut request: &mut Request) -> PencilResult {
+    if misc::is_content_type_json(request.headers().clone()) {
+        // Get the username from the JSON of the request if it exists
+        match misc::get_json(&mut request) {
+            Some(json) => {
+                match json.as_object() {
+                    Some(obj) => {
+                        match obj.get("username") {
+                            Some(username) => {
+                                let url: String = format!("{}/users", DB_BASE_URL);
+                                let body: String = format!("{{\"username\": {}}}", username);
+                                create_entity(&url, &body)
+                            }
+                            None => {
+                                Ok(misc::build_response(400,
+                                                        "{\"error\": \"username wasn't \
+                                                         provided\"}"))
+                            }
+                        }
+                    }
+                    None => {
+                        return Ok(misc::build_response(400,
+                                                       "{\"error\": \"JSON isn't an object\"}"));
+                    }
+                }
+            }
+            None => {
+                return Ok(misc::build_response(500, "{\"error\": \"Failed to parse JSON\"}"));
+            }
         }
-        None => Ok(misc::build_response(400, "{\"error\": \"username wasn't provided\"}")),
+    } else {
+        Ok(misc::build_response(415, "{\"error\": \"Wrong content-type used\"}"))
     }
 }
 

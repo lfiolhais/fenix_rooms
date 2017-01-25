@@ -4,6 +4,7 @@
 //! information received is parsed and proecessed.
 extern crate pencil;
 extern crate hyper;
+extern crate serde_json;
 
 // ///////////////////////////////////////////////////////////
 // Basic Structs
@@ -59,11 +60,16 @@ const DB_BASE_URL: &'static str = "https://asint-project.herokuapp.com";
 pub mod handlers;
 mod getters;
 mod misc {
-    use api::pencil::{Response as PencilResponse, UserError};
+    use api::pencil::{Response as PencilResponse, UserError, Request};
+    use api::serde_json::Value;
     use utils::{from_json_to_obj, read_response_body};
 
     use super::hyper::status::StatusCode;
+    use super::hyper::header::ContentType;
+    use super:: hyper::header::Headers;
     use super::{getters, GenericSpace};
+
+    use std::io::Read;
 
     /// Checks in the `FenixEDU` API if the space with id `id` exists. A space is
     /// considered a room when the parameter `contained_spaces` is empty.
@@ -115,5 +121,41 @@ mod misc {
         response.status_code = status_code;
 
         response
+    }
+
+    /// Parses the incoming JSON request data.
+    ///
+    /// # Arguments
+    /// * `request` => request made
+    ///
+    /// # Return Value
+    /// JSON object
+    pub fn get_json(request: &mut Request) -> Option<Value> {
+        let mut data = String::from("");
+        match request.read_to_string(&mut data) {
+            Ok(_) => {
+                match from_json_to_obj(&data) {
+                    Ok(json) => Some(json),
+                    Err(_) => None,
+                }
+            }
+            Err(_) => None,
+        }
+    }
+
+    /// Check if content-type is set to JSON
+    ///
+    /// # Arguments
+    /// * `headers` => headers of the request
+    ///
+    /// # Return Value
+    /// True if it is false if it isn't
+    pub fn is_content_type_json(headers: Headers) -> bool {
+        let content_type = match headers.get::<ContentType>() {
+            Some(content_type) => content_type,
+            None => return false
+        };
+
+        ContentType::json() == *content_type
     }
 }

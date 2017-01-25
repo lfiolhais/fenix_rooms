@@ -110,8 +110,7 @@ pub fn read_response_body(response: &mut Response) -> Result<String, String> {
     if read_size != 0 {
         Ok(buf)
     } else {
-        let error = format!("{{ \"error\": \"{} did not return any information\" }}",
-                            response.url);
+        let error = format!("{} did not return any information", response.url);
         Err(error)
     }
 }
