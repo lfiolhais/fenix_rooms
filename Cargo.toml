@@ -17,9 +17,9 @@ path = "src/bin/server.rs"
 log = "0.3"
 env_logger = "0.3.5"
 hyper = "0.9.14"
-serde_json = "0.8"
-serde_derive = "0.8"
-serde = "0.8.19"
+serde_json = "0.8.6"
+serde_derive = "0.8.6"
+serde = "0.8.23"
 
 [dependencies.pencil]
 git = "https://github.com/lfiolhais/pencil"
