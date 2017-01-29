@@ -1,0 +1,3 @@
+[submodule "asint-js"]
+	path = asint-js
+	url = git@github.com:FranciscoMLeal/asint-js.git
