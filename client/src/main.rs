@@ -5,17 +5,22 @@
 extern crate fenix_rooms;
 #[macro_use]
 extern crate clap;
+extern crate serde_json;
 extern crate toml;
 
 use fenix_rooms::utils::{delete_request, get_request, post_request, read_response_body};
+use fenix_rooms::utils::{from_json_to_obj, from_obj_to_json};
 use fenix_rooms::api::GenericSpace;
 
 use clap::App;
 
+use serde_json::Value;
+
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Write, Read, stdin};
 use std::path::PathBuf;
 use std::env::current_dir;
+use std::process;
 
 const DEFAULT_CONFIG_TOML: &'static str = "[session]
 server_url = \"https://fenix-rooms.herokuapp.com\"
@@ -49,6 +54,7 @@ fn main() {
                            err)
                 }
             };
+            // This is a safe unwrap because we created the file with the correct permissions
             File::open("fenix-rooms-user.toml").unwrap()
         }
     };
@@ -73,12 +79,60 @@ fn main() {
         None => panic!("Configuration file is malformed."),
     };
 
+    let server_url: &str = match config.lookup("session.server_url") {
+        Some(value) => value.as_str().unwrap(),
+        None => panic!("Configuration file is malformed."),
+    };
+
     // Warn user to login if the username or user_id is empty
     if !is_username || !is_user_id {
         println!("You need to login before proceeding.");
     }
 
-    if matches.is_present("login") {
+    match matches.subcommand_name() {
+        Some("login") => login(server_url),
+        Some("check-in") => unimplemented!(),
+        Some("check-out") => unimplemented!(),
+        Some("rooms") => unimplemented!(),
+        Some("spaces") => unimplemented!(),
+        Some("id") => unimplemented!(),
+        Some("path") => unimplemented!(),
+        Some("create_room") => unimplemented!(),
+        _ => panic!("You need to provide a subcommand"),
+    };
 
-    }
+    process::exit(0);
+}
+
+fn login(server_url: &str) {
+    let mut input: String = String::new();
+    println!("Username: ");
+    stdin().read_line(&mut input).expect("Failed reading from stdin");
+
+    let url: String = format!("{}/api/create_user", server_url);
+    let body: String = format!("{{ \"username\": \"{}\" }}", input.trim());
+
+    match post_request(&url, &body) {
+        Ok(mut response) => {
+            let body: String = match read_response_body(&mut response) {
+                Ok(body) => body,
+                Err(err) => panic!("Failed reading response body: {}", err),
+            };
+
+            let obj: Value = match serde_json::from_str(&body) {
+                Ok(obj) => obj,
+                Err(err) => panic!("Failed to parse JSON: {}", err),
+            };
+            println!("JSON: {:#?}", obj);
+
+            // if response.status == StatusCode::Ok {
+
+            // } else if response.status == StatusCode::Conflict {
+
+            // } else {
+            //     println!("Something went wrong in the server or the database.");
+            // }
+        }
+        Err(err) => panic!("The post request failed with: {}", err),
+    };
 }

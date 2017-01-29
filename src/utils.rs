@@ -50,7 +50,7 @@ pub fn post_request(url: &str, body: &str) -> Result<Response, String> {
     let mut headers = Headers::new();
     headers.set(ContentType(Mime(TopLevel::Application,
                                  SubLevel::Json,
-                                 vec![(Attr::Charset, Value::Utf8)])));
+                                 vec![])));
 
     // Create and send POST request
     match client.post(url).headers(headers).body(body).send() {
@@ -78,7 +78,7 @@ pub fn delete_request(url: &str, body: &str) -> Result<Response, String> {
     let mut headers = Headers::new();
     headers.set(ContentType(Mime(TopLevel::Application,
                                  SubLevel::Json,
-                                 vec![(Attr::Charset, Value::Utf8)])));
+                                 vec![])));
 
     // Create and send POST request
     match client.delete(url).headers(headers).body(body).send() {

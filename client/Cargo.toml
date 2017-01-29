@@ -1,9 +1,18 @@
 [package]
+authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
 name = "client"
 version = "0.1.0"
-authors = ["Luís Fiolhais <luisazenhas.fiolhais@openmailbox.org>"]
 
 [dependencies]
-fenix_rooms = { path = ".." }
-clap = { version = "~2.19.0", features = ["yaml"] }
-toml = { version = "0.2.1", features = ["serde"] }
+serde_json = "0.9.2"
+
+[dependencies.clap]
+features = ["yaml"]
+version = "~2.19.0"
+
+[dependencies.fenix_rooms]
+path = ".."
+
+[dependencies.toml]
+features = ["serde"]
+version = "0.2.1"
