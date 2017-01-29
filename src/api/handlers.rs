@@ -257,6 +257,14 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
                 return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
             }
         };
+    } else if response.status == StatusCode::Conflict {
+        status_code = 409;
+        buffer = match utils::read_response_body(&mut response) {
+            Ok(buffer) => buffer,
+            Err(err) => {
+                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
+            }
+        };
     } else if response.status == StatusCode::NotFound {
         status_code = 404;
         buffer = match utils::read_response_body(&mut response) {
