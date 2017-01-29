@@ -60,7 +60,7 @@ fn main() {
     app.register_template("checkin.html");
     app.get("/", "root_handler", root);
     app.get("/admin.html", "admin_handler", admin);
-    app.get("/checkin.html", "checkin_handler", checkin);
+    app.get("/checkin.html/?id=<id:int>", "checkin_handler", checkin);
 
     // ///////////////////////////////////////////////////////
     // REST API
