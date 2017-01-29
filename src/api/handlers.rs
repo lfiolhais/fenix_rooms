@@ -629,6 +629,8 @@ pub fn check_in_get_handler(request: &mut Request) -> PencilResult {
             let url: String = format!("{}/checkins", DB_BASE_URL);
             let body: String = format!("{{ \"room_id\": \"{}\" }}", id);
 
+            println!("Body: {}", body);
+
             let mut get_response: HyperResponse = match utils::get_request_body(&url, &body) {
                 Ok(response) => response,
                 Err(err) => {
@@ -657,7 +659,7 @@ pub fn check_in_get_handler(request: &mut Request) -> PencilResult {
             } else {
                 // When the `FenixEDU` servers are down warn the user
                 status_code = 503;
-                buffer = "{{\"error\": \"Database had an error\"}}".to_owned();
+                buffer = "{\"error\": \"Database had an error\"}".to_owned();
             }
 
             Ok(misc::build_response(status_code, &buffer))
