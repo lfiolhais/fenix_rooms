@@ -53,9 +53,11 @@ fn main() {
     app.register_template("register.html");
     app.register_template("admin.html");
     app.register_template("checkin.html");
+    app.register_template("checkout.html");
     app.get("/", "root_handler", root);
     app.get("/admin.html", "admin_handler", admin);
     app.get("/checkin.html", "checkin_handler", checkin);
+    app.get("/checkout.html", "checkout_handler", checkout);
 
     // ///////////////////////////////////////////////////////
     // REST API
@@ -134,4 +136,11 @@ fn checkin(request: &mut Request) -> PencilResult {
     context.insert("teste".to_string(), "teste".to_string());
 
     request.app.render_template("checkin.html", &context)
+}
+
+fn checkout(request: &mut Request) -> PencilResult {
+    let mut context = BTreeMap::new();
+    context.insert("teste".to_string(), "teste".to_string());
+
+    request.app.render_template("checkout.html", &context)
 }
