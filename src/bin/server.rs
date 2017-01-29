@@ -16,6 +16,7 @@
 //! * `path/<my_path>` => Returns the contained spaces, name and capacity
 //!                       when applicable for the specified hierarchical
 //!                       path.
+//! * `check_in/<room_id>` => Returns the users in the specified room_id.
 //!
 //! ## POST
 //! * `create_user` => Creates a user in the database;
@@ -73,6 +74,10 @@ fn main() {
     app.get("/api/path/<my_path:path>",
             "path_handler",
             handlers::path_handler);
+    // Check in
+    app.get("/api/check_in/<room_id:int>",
+            "check_in_get_handler",
+            handlers::check_in_get_handler);
 
     // /////
     // POST

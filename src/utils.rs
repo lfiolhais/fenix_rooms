@@ -32,6 +32,32 @@ pub fn get_request(url: &str) -> Result<Response, String> {
     }
 }
 
+/// Perform a GET request to the specified url
+///
+/// Build a GET request and query. Quietly bail if the request fails.
+///
+/// # Arguments
+/// * `url` => Specified URL to perform the GET request to.
+///
+/// # Return Value
+/// The response or the error message.
+pub fn get_request_body(url: &str, body: &str) -> Result<Response, String> {
+    // Create Hyper client to perform REST calls
+    let client = Client::new();
+
+    // Add a JSON header
+    let mut headers = Headers::new();
+    headers.set(ContentType(Mime(TopLevel::Application,
+                                 SubLevel::Json,
+                                 vec![(Attr::Charset, Value::Utf8)])));
+
+    // Create and send GET request
+    match client.get(url).headers(headers).body(body).send() {
+        Ok(res) => Ok(res),
+        Err(err) => Err(format!("The GET request failed with: {}", err)),
+    }
+}
+
 /// Perform a POST request to the specified url
 ///
 /// Build a POST request and query. Quietly bail if the request fails.

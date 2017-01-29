@@ -614,3 +614,54 @@ pub fn rooms_handler(_: &mut Request) -> PencilResult {
 
     Ok(misc::build_response(status_code, &buffer))
 }
+
+/// Handler for IDs using the database. The id sent in the url will be processed.
+///
+/// # Arguments
+/// * `id` => id to process
+///
+/// # Return Value
+/// Read the contents and send it as JSON.
+pub fn check_in_get_handler(request: &mut Request) -> PencilResult {
+    // Get ID from request
+    match request.view_args.get("room_id") {
+        Some(id) => {
+            let url: String = format!("{}/checkins", DB_BASE_URL);
+            let body: String = format!("{{ \"room_id\": \"{}\" }}", id);
+
+            let mut get_response: HyperResponse = match utils::get_request_body(&url, &body) {
+                Ok(response) => response,
+                Err(err) => {
+                    return Ok(misc::build_response(500,
+                                                   &format!("{{ \"error\": \"{}\" }}", err)));
+                }
+            };
+
+            let buffer: String;
+            let status_code: u16;
+
+            // If the GET request is successful read the body and process the request
+            if get_response.status == StatusCode::Ok {
+                buffer = match utils::read_response_body(&mut get_response) {
+                    Ok(buf) => buf,
+                    Err(err) => {
+                        return Ok(misc::build_response(500,
+                                                       &format!("{{ \"error\": \"{}\" }}", err)));
+                    }
+                };
+                status_code = 200;
+            } else if get_response.status == StatusCode::NotFound {
+                // When the id is not valid warn the user
+                status_code = 404;
+                buffer = format!("{{\"error\": \"The room id: {} was not found\"}}", id);
+            } else {
+                // When the `FenixEDU` servers are down warn the user
+                status_code = 503;
+                buffer = "{{\"error\": \"Database had an error\"}}".to_owned();
+            }
+
+            Ok(misc::build_response(status_code, &buffer))
+        }
+        None => Ok(misc::build_response(400, "{\"error\": \"The room_id wasn't provided\"}")),
+    }
+}
