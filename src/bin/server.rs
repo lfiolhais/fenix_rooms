@@ -32,8 +32,9 @@ extern crate env_logger;
 extern crate pencil;
 
 use fenix_rooms::api::handlers;
-use pencil::Pencil;
+use pencil::{Pencil, PencilResult, Request};
 use std::env;
+use std::collections::BTreeMap;
 
 fn get_server_port() -> u16 {
     let port_str = env::var("PORT").unwrap_or(String::new());
@@ -41,10 +42,23 @@ fn get_server_port() -> u16 {
 }
 
 fn main() {
-    let mut app = Pencil::new("~/fenix-rooms/src");
+    // Must use absolute paths
+    let mut app = Pencil::new("./asint-js/");
+    println!("Root Path: {}", app.root_path);
+    app.enable_static_file_handling();
+    app.static_folder = "static".to_owned();
+    app.template_folder = "".to_owned();
     app.set_debug(true);
     app.set_log_level();
     env_logger::init().unwrap();
+
+    // ///////////////////////////////////////////////////////
+    // Web
+    // ///////////////////////////////////////////////////////
+    app.register_template("register.html");
+    app.register_template("admin.html");
+    app.get("/", "root_handler", root);
+    app.get("/admin.html", "admin_handler", admin);
 
     // ///////////////////////////////////////////////////////
     // REST API
@@ -98,4 +112,18 @@ fn main() {
     let ip = format!("{}:{}", listen_addr, get_server_port());
     debug!("Running on {}", ip);
     app.run(ip.as_str());
+}
+
+fn root(request: &mut Request) -> PencilResult {
+    let mut context = BTreeMap::new();
+    context.insert("teste".to_string(), "teste".to_string());
+
+    request.app.render_template("register.html", &context)
+}
+
+fn admin(request: &mut Request) -> PencilResult {
+    let mut context = BTreeMap::new();
+    context.insert("teste".to_string(), "teste".to_string());
+
+    request.app.render_template("admin.html", &context)
 }

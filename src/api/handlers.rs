@@ -283,23 +283,46 @@ fn create_entity(url: &str, body: &str) -> PencilResult {
 
 /// Creates a User in the Database
 ///
-/// Create a user in the database with the specified `username` in the body. If
-/// multiple usernames are provided only the first will be considered.
+/// Create a user in the database with the specified `username` in the body.
 ///
 /// # Arguments
 /// * `request` - The request sent by the client
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-pub fn create_user_handler(request: &mut Request) -> PencilResult {
-    // Get the username from the body of the request if it exists
-    match request.form().get("username") {
-        Some(username) => {
-            let url: String = format!("{}/users", DB_BASE_URL);
-            let body: String = format!("{{\"username\": \"{}\"}}", username);
-            create_entity(&url, &body)
+pub fn create_user_handler(mut request: &mut Request) -> PencilResult {
+    if misc::is_content_type_json(request.headers().clone()) {
+        // Get the username from the JSON of the request if it exists
+        match misc::get_json(&mut request) {
+            Some(json) => {
+                match json.as_object() {
+                    Some(obj) => {
+                        match obj.get("username") {
+                            Some(username) => {
+                                if username.is_string() {
+                                    let url: String = format!("{}/users", DB_BASE_URL);
+                                    let body: String = format!("{{\"username\": {}}}", username);
+                                    create_entity(&url, &body)
+                                } else {
+                                    Ok(misc::build_response(400,
+                                                            "{\"error\": \"username doesn't have \
+                                                             correct type\"}"))
+                                }
+                            }
+                            None => {
+                                Ok(misc::build_response(400,
+                                                        "{\"error\": \"username wasn't \
+                                                         provided\"}"))
+                            }
+                        }
+                    }
+                    None => Ok(misc::build_response(400, "{\"error\": \"JSON isn't an object\"}")),
+                }
+            }
+            None => Ok(misc::build_response(500, "{\"error\": \"Failed to parse JSON\"}")),
         }
-        None => Ok(misc::build_response(400, "{\"error\": \"username wasn't provided\"}")),
+    } else {
+        Ok(misc::build_response(415, "{\"error\": \"Wrong content-type used\"}"))
     }
 }
 
@@ -314,66 +337,90 @@ pub fn create_user_handler(request: &mut Request) -> PencilResult {
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-pub fn create_room_handler(request: &mut Request) -> PencilResult {
-    // Get the `fenix_id`, `capacity`, `location` and `admin_id` from the body
-    // of the request if they exists. I need to clone the parameter because
-    // Pencil returns a reference to the Struct and doesn't allow me to consume
-    // the contents of the form. We are essentially wasting memory.
-    let location: String = match request.form().get("location") {
-        Some(location) => location.clone(),
-        None => "".to_owned(),
-    };
+pub fn create_room_handler(mut request: &mut Request) -> PencilResult {
+    if misc::is_content_type_json(request.headers().clone()) {
+        // Get the username from the JSON of the request if it exists
+        match misc::get_json(&mut request) {
+            Some(json) => {
+                match json.as_object() {
+                    Some(obj) => {
+                        if obj.contains_key("location") && obj.contains_key("fenix_id") &&
+                           obj.contains_key("capacity") &&
+                           obj.contains_key("user_id") {
+                            // Declare and initialize variables
+                            let user_id: &str = match obj.get("user_id").unwrap().as_str() {
+                                Some(user_id) => user_id,
+                                None => "",
+                            };
+                            let fenix_id: &str = match obj.get("fenix_id").unwrap().as_str() {
+                                Some(fenix_id) => fenix_id,
+                                None => "",
+                            };
+                            let location: &str = match obj.get("location").unwrap().as_str() {
+                                Some(location) => location,
+                                None => "",
+                            };
+                            let capacity: &str = match obj.get("capacity").unwrap().as_str() {
+                                Some(capacity) => capacity,
+                                None => "",
+                            };
 
-    let fenix_id: String = match request.form().get("fenix_id") {
-        Some(fenix_id) => fenix_id.clone(),
-        None => "".to_owned(),
-    };
+                            if user_id.is_empty() || fenix_id.is_empty() || location.is_empty() ||
+                               capacity.is_empty() {
+                                return Ok(misc::build_response(400,
+                                                               "{\"error\": \"parameters don't \
+                                                                have correct type\"}"));
+                            }
 
-    let capacity: String = match request.form().get("capacity") {
-        Some(capacity) => capacity.clone(),
-        None => "".to_owned(),
-    };
+                            // Default to Unauthorized.
+                            let mut status_code: u16 = 401;
+                            let mut buffer: String =
+                                "{ \"error\": \"Unauthorized access to database\"}".to_owned();
 
-    let user_id: String = match request.form().get("user_id") {
-        Some(user_id) => user_id.clone(),
-        None => "".to_owned(),
-    };
+                            if user_id == "0" {
+                                let url: String = format!("{}/rooms", DB_BASE_URL);
+                                let body: String = format!("{{\"location\": \"{}\", \
+                                                            \"capacity\": \"{}\", \"fenix_id\": \
+                                                            \"{}\"}}",
+                                                           location,
+                                                           capacity,
+                                                           fenix_id);
 
-    if location.is_empty() || capacity.is_empty() || fenix_id.is_empty() || user_id.is_empty() {
-        return Ok(misc::build_response(400,
-                                       "{\"error\": \"One of the necessary arguments wasn't \
-                                        provided\"}"));
-    }
+                                let room_exists: bool = match misc::is_room(fenix_id) {
+                                    Ok(room_exists) => room_exists,
+                                    Err(err) => {
+                                        return Ok(misc::build_response(500,
+                                                                       &format!("{{ \"error\": \
+                                                                                 \"{}\" }}",
+                                                                                err.desc)));
+                                    }
+                                };
 
-    // Default to Unauthorized.
-    let mut status_code: u16 = 401;
-    let mut buffer: String = "{ \"error\": \"Unauthorized access to database\"}".to_owned();
+                                if room_exists {
+                                    return create_entity(&url, &body);
+                                } else {
+                                    status_code = 404;
+                                    buffer = "{ \"error\" : \"The provided fenix_id does not \
+                                              match a space or room in FenixEDU\"}"
+                                        .to_owned();
+                                }
+                            }
 
-    if user_id == "0" {
-        let url: String = format!("{}/rooms", DB_BASE_URL);
-        let body: String = format!("{{\"location\": \"{}\", \"capacity\": {}, \"fenix_id\": {}}}",
-                                   location,
-                                   capacity,
-                                   fenix_id);
-
-        let room_exists: bool = match misc::is_room(&fenix_id) {
-            Ok(room_exists) => room_exists,
-            Err(err) => {
-                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err.desc)));
+                            Ok(misc::build_response(status_code, &buffer))
+                        } else {
+                            Ok(misc::build_response(400,
+                                                    "{\"error\": \"One of the necessary \
+                                                     arguments wasn't provided\"}"))
+                        }
+                    }
+                    None => Ok(misc::build_response(400, "{\"error\": \"JSON isn't an object\"}")),
+                }
             }
-        };
-
-        if room_exists {
-            return create_entity(&url, &body);
-        } else {
-            status_code = 404;
-            buffer = "{ \"error\" : \"The provided fenix_id does not match a space or room in \
-                      FenixEDU\"}"
-                .to_owned();
+            None => Ok(misc::build_response(500, "{\"error\": \"Failed to parse JSON\"}")),
         }
+    } else {
+        Ok(misc::build_response(415, "{\"error\": \"Wrong content-type used\"}"))
     }
-
-    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Checks in in the Database
@@ -386,24 +433,48 @@ pub fn create_room_handler(request: &mut Request) -> PencilResult {
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-pub fn check_in_handler(request: &mut Request) -> PencilResult {
-    let user_id: String = match request.form().get("user_id") {
-        Some(user_id) => user_id.clone(),
-        None => "".to_owned(),
-    };
+pub fn check_in_handler(mut request: &mut Request) -> PencilResult {
+    if misc::is_content_type_json(request.headers().clone()) {
+        // Get the username from the JSON of the request if it exists
+        match misc::get_json(&mut request) {
+            Some(json) => {
+                match json.as_object() {
+                    Some(obj) => {
+                        if obj.contains_key("user_id") && obj.contains_key("room_id") {
+                            let user_id: &str = match obj.get("user_id").unwrap().as_str() {
+                                Some(user_id) => user_id,
+                                None => "",
+                            };
+                            let room_id: &str = match obj.get("room_id").unwrap().as_str() {
+                                Some(room_id) => room_id,
+                                None => "",
+                            };
 
-    let room_id: String = match request.form().get("room_id") {
-        Some(room_id) => room_id.clone(),
-        None => "".to_owned(),
-    };
+                            if user_id.is_empty() || room_id.is_empty() {
+                                return Ok(misc::build_response(400,
+                                                               "{\"error\": \"parameters don't \
+                                                                have correct type\"}"));
+                            }
 
-    if room_id.is_empty() || user_id.is_empty() {
-        Ok(misc::build_response(400,
-                                "{\"error\": \"One of the necessary arguments wasn't provided\"}"))
+                            let url: String = format!("{}/checkins", DB_BASE_URL);
+                            let body: String = format!("{{\"user_id\": \"{}\", \"room_id\": \
+                                                        \"{}\"}}",
+                                                       user_id,
+                                                       room_id);
+                            create_entity(&url, &body)
+                        } else {
+                            Ok(misc::build_response(400,
+                                                    "{\"error\": \"One of the necessary \
+                                                     arguments wasn't provided\"}"))
+                        }
+                    }
+                    None => Ok(misc::build_response(400, "{\"error\": \"JSON isn't an object\"}")),
+                }
+            }
+            None => Ok(misc::build_response(500, "{\"error\": \"Failed to parse JSON\"}")),
+        }
     } else {
-        let url: String = format!("{}/checkins", DB_BASE_URL);
-        let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
-        create_entity(&url, &body)
+        Ok(misc::build_response(415, "{\"error\": \"Wrong content-type used\"}"))
     }
 }
 
@@ -417,55 +488,90 @@ pub fn check_in_handler(request: &mut Request) -> PencilResult {
 ///
 /// # Output
 /// A Response with a JSON messsage and correct status code.
-pub fn check_out_handler(request: &mut Request) -> PencilResult {
-    let user_id: String = match request.form().get("user_id") {
-        Some(user_id) => user_id.clone(),
-        None => "".to_owned(),
-    };
+pub fn check_out_handler(mut request: &mut Request) -> PencilResult {
+    if misc::is_content_type_json(request.headers().clone()) {
+        // Get the username from the JSON of the request if it exists
+        match misc::get_json(&mut request) {
+            Some(json) => {
+                match json.as_object() {
+                    Some(obj) => {
+                        if obj.contains_key("user_id") && obj.contains_key("room_id") {
+                            let user_id: &str = match obj.get("user_id").unwrap().as_str() {
+                                Some(user_id) => user_id,
+                                None => "",
+                            };
+                            let room_id: &str = match obj.get("room_id").unwrap().as_str() {
+                                Some(room_id) => room_id,
+                                None => "",
+                            };
 
-    let room_id: String = match request.form().get("room_id") {
-        Some(room_id) => room_id.clone(),
-        None => "".to_owned(),
-    };
+                            let status_code: u16;
+                            let buffer: String;
 
-    let status_code: u16;
-    let buffer: String;
+                            if room_id.is_empty() || user_id.is_empty() {
+                                status_code = 400;
+                                buffer = "{\"error\": \"parameters don't \
+                                          have correct type\"}"
+                                    .to_owned();
+                            } else {
+                                let url: String = format!("{}/checkins", DB_BASE_URL);
+                                let body: String = format!("{{\"user_id\": \"{}\", \"room_id\": \
+                                                            \"{}\"}}",
+                                                           user_id,
+                                                           room_id);
 
-    if room_id.is_empty() || user_id.is_empty() {
-        status_code = 400;
-        buffer = "{\"error\": \"One of the necessary arguments wasn't provided\"}".to_owned();
-    } else {
-        let url: String = format!("{}/checkins", DB_BASE_URL);
-        let body: String = format!("{{\"user_id\": {}, \"room_id\": {}}}", user_id, room_id);
+                                let mut response: HyperResponse =
+                                    match utils::delete_request(&url, &body) {
+                                        Ok(response) => response,
+                                        Err(err) => {
+                                            return Ok(misc::build_response(500,
+                                                                           &format!("{{ \"error\": \
+                                                                                     \"{}\" }}",
+                                                                                    err)));
+                                        }
+                                    };
 
-        let mut response: HyperResponse = match utils::delete_request(&url, &body) {
-            Ok(response) => response,
-            Err(err) => {
-                return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
-            }
-        };
+                                // Deleting returns Ok or NoContent with no body
+                                if response.status == StatusCode::NoContent ||
+                                   response.status == StatusCode::Ok {
+                                    status_code = 200;
+                                    buffer = "".to_owned();
+                                } else if response.status == StatusCode::NotFound {
+                                    // The resource asked to delete was not found
+                                    status_code = 404;
+                                    buffer = match utils::read_response_body(&mut response) {
+                                        Ok(buffer) => buffer,
+                                        Err(err) => {
+                                            return Ok(misc::build_response(500,
+                                                                           &format!("{{ \"error\": \
+                                                                                     \"{}\" }}",
+                                                                                    err)));
+                                        }
+                                    };
+                                } else {
+                                    // The database had an error
+                                    status_code = 503;
+                                    buffer = "{\"error\": \"There is an error in the database\"}"
+                                        .to_owned();
+                                }
+                            }
 
-        // Deleting returns Ok or NoContent with no body
-        if response.status == StatusCode::NoContent || response.status == StatusCode::Ok {
-            status_code = 200;
-            buffer = "".to_owned();
-        } else if response.status == StatusCode::NotFound {
-            // The resource asked to delete was not found
-            status_code = 404;
-            buffer = match utils::read_response_body(&mut response) {
-                Ok(buffer) => buffer,
-                Err(err) => {
-                    return Ok(misc::build_response(500, &format!("{{ \"error\": \"{}\" }}", err)));
+                            Ok(misc::build_response(status_code, &buffer))
+                        } else {
+                            Ok(misc::build_response(400,
+                                                    "{\"error\": \"One of the necessary \
+                                                     arguments wasn't provided\"}"))
+                        }
+                    }
+                    None => Ok(misc::build_response(400, "{\"error\": \"JSON isn't an object\"}")),
                 }
-            };
-        } else {
-            // The database had an error
-            status_code = 503;
-            buffer = "{\"error\": \"There is an error in the database\"}".to_owned();
+            }
+            None => Ok(misc::build_response(500, "{\"error\": \"Failed to parse JSON\"}")),
         }
+    } else {
+        Ok(misc::build_response(415, "{\"error\": \"Wrong content-type used\"}"))
     }
 
-    Ok(misc::build_response(status_code, &buffer))
 }
 
 /// Gets the list of rooms in the Database
