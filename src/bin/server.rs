@@ -106,7 +106,7 @@ fn main() {
     };
 
     let ip = format!("{}:{}", listen_addr, get_server_port());
-    debug!("Running on {}", ip);
+    // debug!("Running on {}", ip);
     app.run(ip.as_str());
 }
 
