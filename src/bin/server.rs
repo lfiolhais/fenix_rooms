@@ -43,7 +43,7 @@ fn get_server_port() -> u16 {
 
 fn main() {
     // Must use absolute paths
-    let mut app = Pencil::new("/Users/lfiolhais/Projects/fenix-rooms/asint-js/");
+    let mut app = Pencil::new("./asint-js/");
     println!("Root Path: {}", app.root_path);
     app.enable_static_file_handling();
     app.static_folder = "static".to_owned();
