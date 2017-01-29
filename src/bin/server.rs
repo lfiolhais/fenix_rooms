@@ -26,9 +26,6 @@
 //! ## DELETE
 //! * `check_out` => Removes a user from a specified room.
 extern crate fenix_rooms;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
 extern crate pencil;
 
 use fenix_rooms::api::handlers;
@@ -48,9 +45,6 @@ fn main() {
     app.enable_static_file_handling();
     app.static_folder = "static".to_owned();
     app.template_folder = "".to_owned();
-    app.set_debug(true);
-    app.set_log_level();
-    env_logger::init().unwrap();
 
     // ///////////////////////////////////////////////////////
     // Web
@@ -60,7 +54,7 @@ fn main() {
     app.register_template("checkin.html");
     app.get("/", "root_handler", root);
     app.get("/admin.html", "admin_handler", admin);
-    app.get("/checkin.html?id=<id:int>", "checkin_handler", checkin);
+    app.get("/checkin.html", "checkin_handler", checkin);
 
     // ///////////////////////////////////////////////////////
     // REST API
