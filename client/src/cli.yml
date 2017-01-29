@@ -2,43 +2,40 @@ name: fenix-rooms
 version: "1.0"
 author: Luís Fiolhais <luis.azenhas.fiolhais@tecnico.ulisboa.pt>
 about: A Rust CLI client for the Fenix Rooms web service
-args:
+subcommands:
     - login:
-        short: l
-        long: login
-        help: Logs in the user and stores the session in fenix-rooms-user.toml
+        about: Logs in the user and stores the session in fenix-rooms-user.toml
     - check-in:
-        long: check-in
-        value_name: ROOM-ID
-        takes_value: true
-        help: Checks user in into a specified room
+        about: Checks user in into a specified room
+        args:
+            - ROOM-ID:
+                required: true
+                index: 1
     - check-out:
-        long: check-out
-        value_name: ROOM-ID
-        takes_value: true
-        help: Checks user out of a specified room
+        about: Checks user out of a specified room
+        args:
+            - ROOM-ID:
+                required: true
+                index: 1
     - rooms:
-        short: r
-        long: rooms
-        help: Displays the rooms available in the database
+        about: Displays the rooms available in the database
     - spaces:
-        short: s
-        long: spaces
-        help: Displays all the top level spaces with their respective id
+        about: Displays all the top level spaces with their respective id
     - id:
-        short: i
-        long: id
-        value_name: ID
-        takes_value: true
-        help: Get space with the specified ID
+        about: Get space with the specified ID
+        args:
+            - ID:
+                required: true
+                index: 1
     - path:
-        short: p
-        long: path
-        value_name: PATH
-        takes_value: true
-        help: Get space with the specified path
+        about: Get space with the specified path
+        args:
+            - PATH:
+                required: true
+                index: 1
     - create-room:
-        long: create-room
-        value_name: ROOM-ID
-        takes_value: true
-        help: Creates a room in the database
+        about: Creates a room in the database
+        args:
+            - ROOM-ID:
+                required: true
+                index: 1

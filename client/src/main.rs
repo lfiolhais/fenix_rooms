@@ -49,7 +49,7 @@ fn main() {
                            err)
                 }
             };
-            new_file
+            File::open("fenix-rooms-user.toml").unwrap()
         }
     };
 
@@ -57,7 +57,7 @@ fn main() {
     let mut read_file: String = "".to_owned();
     match file.read_to_string(&mut read_file) {
         Ok(_) => {}
-        Err(err) => panic!("Failed to read configuration file with: {}", err),
+        Err(err) => panic!("Failed to read configuration file with: {:#?}", err),
     };
 
     // Transform file into object
