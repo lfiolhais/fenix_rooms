@@ -626,12 +626,9 @@ pub fn check_in_get_handler(request: &mut Request) -> PencilResult {
     // Get ID from request
     match request.view_args.get("room_id") {
         Some(id) => {
-            let url: String = format!("{}/checkins", DB_BASE_URL);
-            let body: String = format!("{{ \"room_id\": \"{}\" }}", id);
+            let url: String = format!("{}/checkins/{}", DB_BASE_URL, id);
 
-            println!("Body: {}", body);
-
-            let mut get_response: HyperResponse = match utils::get_request_body(&url, &body) {
+            let mut get_response: HyperResponse = match utils::get_request(&url) {
                 Ok(response) => response,
                 Err(err) => {
                     return Ok(misc::build_response(500,
@@ -641,6 +638,8 @@ pub fn check_in_get_handler(request: &mut Request) -> PencilResult {
 
             let buffer: String;
             let status_code: u16;
+
+            println!("Status: {}", get_response.status);
 
             // If the GET request is successful read the body and process the request
             if get_response.status == StatusCode::Ok {
