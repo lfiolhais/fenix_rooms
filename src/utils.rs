@@ -38,6 +38,7 @@ pub fn get_request(url: &str) -> Result<Response, String> {
 ///
 /// # Arguments
 /// * `url` => Specified URL to perform the GET request to.
+/// * `body` => Content to send.
 ///
 /// # Return Value
 /// The response or the error message.
