@@ -69,6 +69,30 @@ fn main() {
     // ///////////////////////////////////////////////////////
 
     // /////
+    // OPTIONS
+    // /////
+    // Create User
+    app.route("/api/create_user",
+              &[Options],
+              "create_user_options_handler",
+              options_handler);
+    // Create Room
+    app.route("/api/create_room",
+              &[Options],
+              "create_room_options_handler",
+              options_handler);
+    // Check In
+    app.route("/api/check_in",
+              &[Options],
+              "check_in_options_handler",
+              options_handler);
+    // Check out
+    app.route("/api/check_out",
+              &[Options],
+              "check_out_options_handler",
+              options_handler);
+
+    // /////
     // GET
     // /////
     // ID
@@ -109,30 +133,6 @@ fn main() {
     app.delete("/api/check_out",
                "check_out_handler",
                handlers::check_out_handler);
-
-    // /////
-    // OPTIONS
-    // /////
-    // Create User
-    app.route("/api/create_user",
-              &[Options],
-              "create_user_options_handler",
-              options_handler);
-    // Create Room
-    app.route("/api/create_room",
-              &[Options],
-              "create_room_options_handler",
-              options_handler);
-    // Check In
-    app.route("/api/check_in",
-              &[Options],
-              "check_in_options_handler",
-              options_handler);
-    // Check out
-    app.route("/api/check_out",
-              &[Options],
-              "check_out_options_handler",
-              options_handler);
 
     // Run server
     let listen_addr = if env::var("DYNO").is_ok() {
