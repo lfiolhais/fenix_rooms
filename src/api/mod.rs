@@ -117,10 +117,10 @@ mod misc {
     pub fn build_response(status_code: u16, msg: &str) -> PencilResponse {
         let mut headers = Headers::new();
         headers.set(AccessControlAllowOrigin::Any);
+        headers.set(ContentType::json());
 
         // Build response and set content to JSON response
         let mut response = PencilResponse::from(msg);
-        response.set_content_type("application/json");
         response.status_code = status_code;
         response.headers = headers;
 

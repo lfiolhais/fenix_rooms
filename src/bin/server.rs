@@ -37,7 +37,7 @@ use pencil::{Pencil, PencilResult, Request, Response};
 use pencil::method::Method::Options;
 use std::env;
 use std::collections::BTreeMap;
-use hyper::header::{Headers, ContentType, AccessControlAllowOrigin, AccessControlAllowHeaders};
+use hyper::header::{Headers, AccessControlAllowOrigin, AccessControlAllowHeaders};
 
 fn get_server_port() -> u16 {
     let port_str = env::var("PORT").unwrap_or(String::new());
@@ -90,6 +90,11 @@ fn main() {
     app.route("/api/check_out",
               &[Options],
               "check_out_options_handler",
+              options_handler);
+    // Check in
+    app.route("/api/check_in/<room_id:int>",
+              &[Options],
+              "check_in_get_options_handler",
               options_handler);
 
     // /////
@@ -183,8 +188,7 @@ fn options_handler(request: &mut Request) -> PencilResult {
     headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned()),
                                                UniCase("Access-Control-Allow-Origin".to_owned()),
                                                UniCase("Origin".to_owned()),
-                                               UniCase("Accept".to_owned())
-    ]));
+                                               UniCase("Accept".to_owned())]));
     let mut response = Response::new("");
     response.headers = headers;
 
