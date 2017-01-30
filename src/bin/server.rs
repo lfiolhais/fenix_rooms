@@ -28,11 +28,16 @@
 //! * `check_out` => Removes a user from a specified room.
 extern crate fenix_rooms;
 extern crate pencil;
+extern crate hyper;
+extern crate unicase;
 
 use fenix_rooms::api::handlers;
-use pencil::{Pencil, PencilResult, Request};
+use unicase::UniCase;
+use pencil::{Pencil, PencilResult, Request, Response};
+use pencil::method::Method::Options;
 use std::env;
 use std::collections::BTreeMap;
+use hyper::header::{Headers, ContentType, AccessControlAllowOrigin, AccessControlAllowHeaders};
 
 fn get_server_port() -> u16 {
     let port_str = env::var("PORT").unwrap_or(String::new());
@@ -105,6 +110,30 @@ fn main() {
                "check_out_handler",
                handlers::check_out_handler);
 
+    // /////
+    // OPTIONS
+    // /////
+    // Create User
+    app.route("/api/create_user",
+              &[Options],
+              "create_user_options_handler",
+              options_handler);
+    // Create Room
+    app.route("/api/create_room",
+              &[Options],
+              "create_room_options_handler",
+              options_handler);
+    // Check In
+    app.route("/api/check_in",
+              &[Options],
+              "check_in_options_handler",
+              options_handler);
+    // Check out
+    app.route("/api/check_out",
+              &[Options],
+              "check_out_options_handler",
+              options_handler);
+
     // Run server
     let listen_addr = if env::var("DYNO").is_ok() {
         "0.0.0.0"
@@ -143,4 +172,16 @@ fn checkout(request: &mut Request) -> PencilResult {
     context.insert("teste".to_string(), "teste".to_string());
 
     request.app.render_template("checkout.html", &context)
+}
+
+fn options_handler(_: &mut Request) -> PencilResult {
+    let mut headers = Headers::new();
+
+    headers.set(AccessControlAllowOrigin::Any);
+    headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
+    headers.set(ContentType::json());
+    let mut response = Response::new("");
+    response.headers = headers;
+
+    Ok(response)
 }
