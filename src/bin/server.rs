@@ -180,9 +180,11 @@ fn options_handler(request: &mut Request) -> PencilResult {
     println!("REQUEST: {:#?}", request);
 
     headers.set(AccessControlAllowOrigin::Any);
-    // headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned()),
-    //                                            UniCase("Access-Control-Allow-Origin".to_owned())]));
-    // headers.set(ContentType::json());
+    headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned()),
+                                               UniCase("Access-Control-Allow-Origin".to_owned()),
+                                               UniCase("Origin".to_owned()),
+                                               UniCase("Accept".to_owned())
+    ]));
     let mut response = Response::new("");
     response.headers = headers;
 
