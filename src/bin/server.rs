@@ -35,9 +35,11 @@ use fenix_rooms::api::handlers;
 use unicase::UniCase;
 use pencil::{Pencil, PencilResult, Request, Response};
 use pencil::method::Method::Options;
+use hyper::method::Method;
 use std::env;
 use std::collections::BTreeMap;
-use hyper::header::{Headers, AccessControlAllowOrigin, AccessControlAllowHeaders};
+use hyper::header::{Headers, AccessControlAllowOrigin, AccessControlAllowHeaders,
+                    AccessControlAllowMethods};
 
 fn get_server_port() -> u16 {
     let port_str = env::var("PORT").unwrap_or(String::new());
@@ -183,6 +185,7 @@ fn options_handler(_: &mut Request) -> PencilResult {
     let mut headers = Headers::new();
 
     headers.set(AccessControlAllowOrigin::Any);
+    headers.set(AccessControlAllowMethods(vec![Method::Delete, Method::Get, Method::Post]));
     headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned()),
                                                UniCase("Access-Control-Allow-Origin".to_owned()),
                                                UniCase("Origin".to_owned()),
