@@ -182,8 +182,6 @@ fn checkout(request: &mut Request) -> PencilResult {
 fn options_handler(request: &mut Request) -> PencilResult {
     let mut headers = Headers::new();
 
-    println!("REQUEST: {:#?}", request);
-
     headers.set(AccessControlAllowOrigin::Any);
     headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned()),
                                                UniCase("Access-Control-Allow-Origin".to_owned()),
@@ -191,8 +189,7 @@ fn options_handler(request: &mut Request) -> PencilResult {
                                                UniCase("Accept".to_owned())]));
     let mut response = Response::new("");
     response.headers = headers;
-
-    println!("RESPONSE: {:#?}", response);
+    response.status_code = 200;
 
     Ok(response)
 }
