@@ -174,14 +174,18 @@ fn checkout(request: &mut Request) -> PencilResult {
     request.app.render_template("checkout.html", &context)
 }
 
-fn options_handler(_: &mut Request) -> PencilResult {
+fn options_handler(request: &mut Request) -> PencilResult {
     let mut headers = Headers::new();
+
+    println!("REQUEST: {:#?}", request);
 
     headers.set(AccessControlAllowOrigin::Any);
     headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
     headers.set(ContentType::json());
     let mut response = Response::new("");
     response.headers = headers;
+
+    println!("RESPONSE: {:#?}", response);
 
     Ok(response)
 }
