@@ -66,7 +66,7 @@ mod misc {
 
     use super::hyper::status::StatusCode;
     use super::hyper::header::ContentType;
-    use super:: hyper::header::Headers;
+    use super:: hyper::header::{Headers, AccessControlAllowOrigin};
     use super::{getters, GenericSpace};
 
     use std::io::Read;
@@ -115,10 +115,14 @@ mod misc {
     /// # Return Value
     /// The response built with the specified parameters
     pub fn build_response(status_code: u16, msg: &str) -> PencilResponse {
+        let mut headers = Headers::new();
+        headers.set(AccessControlAllowOrigin::Any);
+
         // Build response and set content to JSON response
         let mut response = PencilResponse::from(msg);
         response.set_content_type("application/json");
         response.status_code = status_code;
+        response.headers = headers;
 
         response
     }
