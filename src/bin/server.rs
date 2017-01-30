@@ -179,7 +179,7 @@ fn checkout(request: &mut Request) -> PencilResult {
     request.app.render_template("checkout.html", &context)
 }
 
-fn options_handler(request: &mut Request) -> PencilResult {
+fn options_handler(_: &mut Request) -> PencilResult {
     let mut headers = Headers::new();
 
     headers.set(AccessControlAllowOrigin::Any);
